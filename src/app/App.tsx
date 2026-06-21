@@ -771,12 +771,37 @@ function LevelView({
 }
 
 // ─── Teacher View ─────────────────────────────────────────────────────────────
-function TeacherView({ users, onLogout }: { users: Record<string, UserData>; onLogout: () => void }) {
+function TeacherView({
+  users,
+  setUsers,
+  onLogout,
+}: {
+  users: Record<string, UserData>;
+  setUsers: React.Dispatch<React.SetStateAction<Record<string, UserData>>>;
+  onLogout: () => void;
+}) {
   const [selected, setSelected] = useState<string | null>(null);
   const [previewCategory, setPreviewCategory] = useState<string | null>(null);
 
   const students = Object.values(users).filter((u) => u.role === "student");
+const deleteStudent = (email: string) => {
+  if (!window.confirm("Ertu viss um að þú viljir eyða þessum nemanda?")) {
+    return;
+  }
 
+  setUsers((prev) => {
+    const updated = { ...prev };
+    delete updated[email];
+
+    localStorage.setItem("delta_users", JSON.stringify(updated));
+
+    return updated;
+  });
+
+  if (selected === email) {
+    setSelected(null);
+  }
+};
   return (
     <div className="min-h-screen bg-background" style={{ fontFamily: "'Outfit', sans-serif" }}>
       <header className="sticky top-0 z-20 bg-card border-b border-border">
@@ -913,6 +938,15 @@ function TeacherView({ users, onLogout }: { users: Record<string, UserData>; onL
                         <div className="text-xs text-muted-foreground truncate" style={{ fontFamily: "'Inter', sans-serif" }}>
                           {student.email}
                         </div>
+                        <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteStudent(student.email);
+                        }}
+                        className="mt-1 px-2 py-1 rounded bg-red-600 text-white text-xs"
+                        >
+                          Eyða
+                          </button>
                       </div>
                     </div>
                     {CATEGORIES.map((c) => {
@@ -1020,7 +1054,8 @@ export default function App() {
 
   if (view === "login") return <LoginView onLogin={login} />;
 
-  if (view === "teacher") return <TeacherView users={users} onLogout={logout} />;
+ if (view === "teacher")
+  return <TeacherView users={users} setUsers={setUsers} onLogout={logout} />
 
   if (view === "level" && activeLevel) {
     const cat = CATEGORIES.find((c) => c.id === activeLevel.catId)!;
