@@ -38,7 +38,7 @@ interface CategoryData {
 interface UserData {
   email: string;
   name: string;
-  role: "student" | "teacher";
+  role: "student" | "teacher" | "admin";
   completed: LevelKey[];
 }
 
@@ -220,8 +220,46 @@ function categoryProgress(completed: Set<LevelKey>, catId: string): { done: numb
 }
 
 // ─── Storage / Auth ───────────────────────────────────────────────────────────
-const TEACHER_EMAIL = "kennari@delta.is";
-const TEACHER_PASSWORD = "kennari123";
+type TeacherRole = "teacher" | "admin";
+const TEACHERS: {
+  email: string;
+  password: string;
+  name: string;
+  role: TeacherRole;
+}[] = [
+  {
+    email: "bylgjaadmin@delta.is",
+    password: "Skoli123",
+    name: "Bylgja",
+    role: "admin"
+  },
+  {
+    email: "arna@delta.is",
+    password: "arna123",
+    name: "Arna",
+    role: "teacher"
+  },
+  {
+    email: "bylgja@delta.is",
+    password: "bylgja123",
+    name: "Bylgja",
+    role: "teacher"
+  }
+];
+function loadTeachers() {
+  const stored = localStorage.getItem("delta_teachers");
+
+  if (stored) {
+    return JSON.parse(stored);
+  }
+
+  localStorage.setItem("delta_teachers", JSON.stringify(TEACHERS));
+  return TEACHERS;
+}
+
+function saveTeachers(teachers: typeof TEACHERS) {
+  localStorage.setItem("delta_teachers", JSON.stringify(teachers));
+}
 
 function loadUsers(): Record<string, UserData> {
   try {
@@ -775,15 +813,26 @@ function TeacherView({
   users,
   setUsers,
   onLogout,
+  currentUser,
 }: {
   users: Record<string, UserData>;
   setUsers: React.Dispatch<React.SetStateAction<Record<string, UserData>>>;
   onLogout: () => void;
+  currentUser: UserData;
 }) {
   const [selected, setSelected] = useState<string | null>(null);
   const [previewCategory, setPreviewCategory] = useState<string | null>(null);
-
+  const [teacherList, setTeacherList] = useState(loadTeachers());
   const students = Object.values(users).filter((u) => u.role === "student");
+  const teachers = teacherList.filter(
+  (t: (typeof TEACHERS)[number]) => t.role === "teacher"
+);
+  const isAdmin = currentUser.role === "admin";
+  const [adminTab, setAdminTab] = useState<"students" | "teachers">("students");
+  const [newTeacherName, setNewTeacherName] = useState("");
+ 
+const [newTeacherEmail, setNewTeacherEmail] = useState("");
+const [newTeacherPassword, setNewTeacherPassword] = useState("");
 const deleteStudent = (email: string) => {
   if (!window.confirm("Ertu viss um að þú viljir eyða þessum nemanda?")) {
     return;
@@ -802,6 +851,23 @@ const deleteStudent = (email: string) => {
     setSelected(null);
   }
 };
+const deleteTeacher = (email: string) => {
+  if (!window.confirm("Ertu viss um að þú viljir eyða þessum kennara?")) {
+    return;
+  }
+
+  const updatedTeachers = loadTeachers().filter(
+    (t: (typeof TEACHERS)[number]) => t.email !== email
+  );
+
+  saveTeachers(updatedTeachers);
+setTeacherList(updatedTeachers);
+
+setNewTeacherName("");
+setNewTeacherEmail("");
+setNewTeacherPassword("");
+
+};
   return (
     <div className="min-h-screen bg-background" style={{ fontFamily: "'Outfit', sans-serif" }}>
       <header className="sticky top-0 z-20 bg-card border-b border-border">
@@ -813,6 +879,30 @@ const deleteStudent = (email: string) => {
               style={{ background: "#1e3a5f15", color: "#1e3a5f" }}>
               <GraduationCap size={12} /> Kennari
             </div>
+            {isAdmin && (
+              <div className="flex items-center gap-3">
+                <div
+      className="ml-2 px-2 py-1 rounded text-xs font-semibold"
+      style={{ background: "#fbbf24", color: "#000" }}
+    >
+      👑 Admin
+    </div>
+
+    <button
+      onClick={() => setAdminTab("students")}
+      className="px-2 py-1 rounded text-xs border"
+    >
+      Nemendur
+    </button>
+
+    <button
+      onClick={() => setAdminTab("teachers")}
+      className="px-2 py-1 rounded text-xs border"
+    >
+      Kennarar
+    </button>
+  </div>
+)}
           </div>
           <button onClick={onLogout}
             className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
@@ -822,6 +912,102 @@ const deleteStudent = (email: string) => {
       </header>
 
       <main className="max-w-5xl mx-auto px-4 py-8">
+        {isAdmin && (
+          <>
+            <div className="mb-6 flex gap-2">
+              <button
+                onClick={() => setAdminTab("students")}
+                className="px-3 py-2 rounded border"
+              >
+                Nemendur
+              </button>
+
+              <button
+                onClick={() => setAdminTab("teachers")}
+                className="px-3 py-2 rounded border"
+              >
+                Kennarar
+              </button>
+
+              
+            </div>
+            {adminTab === "teachers" && (
+              <div className="bg-card rounded-lg border p-4 mt-4">
+                <h3 className="font-bold mb-4">Kennarar</h3>
+                <div className="mb-4 space-y-2">
+  <input
+    type="text"
+    placeholder="Nafn kennara"
+    value={newTeacherName}
+    onChange={(e) => setNewTeacherName(e.target.value)}
+    className="border rounded px-3 py-2 w-full"
+  />
+
+  <input
+    type="email"
+    placeholder="Netfang"
+    value={newTeacherEmail}
+    onChange={(e) => setNewTeacherEmail(e.target.value)}
+    className="border rounded px-3 py-2 w-full"
+  />
+
+  <input
+    type="text"
+    placeholder="Lykilorð"
+    value={newTeacherPassword}
+    onChange={(e) => setNewTeacherPassword(e.target.value)}
+    className="border rounded px-3 py-2 w-full"
+  />
+
+  <button
+    className="px-4 py-2 rounded border"
+    onClick={() => {
+  const updatedTeachers = [
+    ...loadTeachers(),
+    {
+      email: newTeacherEmail,
+      password: newTeacherPassword,
+      name: newTeacherName,
+      role: "teacher" as const,
+    },
+  ];
+
+  saveTeachers(updatedTeachers);
+
+  setNewTeacherName("");
+  setNewTeacherEmail("");
+  setNewTeacherPassword("");
+  setTeacherList(updatedTeachers);
+}}
+  >
+    ➕ Bæta við kennara
+  </button>
+</div>
+
+                {teachers.map((teacher: (typeof TEACHERS)[number]) => (
+                  <div
+                    key={teacher.email}
+                    className="flex justify-between items-center py-3 border-b"
+                  >
+                    <div>
+                     <div className="font-semibold">{teacher.name}</div>
+                     <div className="text-sm text-muted-foreground">
+                       {teacher.email}
+                      </div>
+                     </div>
+
+<button
+  onClick={() => deleteTeacher(teacher.email)}
+  className="px-3 py-1 rounded border text-red-600"
+>
+  Eyða
+</button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
         {selected ? (
           // Student detail view
           (() => {
@@ -1009,16 +1195,28 @@ export default function App() {
     if (!currentUser) return new Set();
     return new Set<LevelKey>(users[currentUser.email]?.completed || []);
   }, [currentUser, users]);
+const login = (email: string, pass: string): string | null => {
+ const teacherAccount = loadTeachers().find(
+  (t: (typeof TEACHERS)[number]) => t.email === email
+);
 
-  const login = (email: string, pass: string): string | null => {
-    if (email === TEACHER_EMAIL) {
-      if (pass !== TEACHER_PASSWORD) return "Rangt lykilorð fyrir kennarareikning";
-      const teacher: UserData = { email: TEACHER_EMAIL, name: "Kennari", role: "teacher", completed: [] };
-      setCurrentUser(teacher);
-      localStorage.setItem("delta_current_user", JSON.stringify(teacher));
-      setView("teacher");
-      return null;
-    }
+if (teacherAccount) {
+  if (pass !== teacherAccount.password) {
+    return "Rangt lykilorð fyrir kennarareikning";
+  }
+
+  const teacher: UserData = {
+  email: teacherAccount.email,
+  name: teacherAccount.name,
+  role: teacherAccount.role,
+  completed: [],
+};
+
+  setCurrentUser(teacher);
+  localStorage.setItem("delta_current_user", JSON.stringify(teacher));
+  setView("teacher");
+  return null;
+}
     // Student: create or load
     const existing = users[email];
     const user: UserData = existing ?? { email, name: email.split("@")[0], role: "student", completed: [] };
@@ -1055,7 +1253,14 @@ export default function App() {
   if (view === "login") return <LoginView onLogin={login} />;
 
  if (view === "teacher")
-  return <TeacherView users={users} setUsers={setUsers} onLogout={logout} />
+  return (
+    <TeacherView
+      users={users}
+      setUsers={setUsers}
+      onLogout={logout}
+      currentUser={currentUser!}
+    />
+  )
 
   if (view === "level" && activeLevel) {
     const cat = CATEGORIES.find((c) => c.id === activeLevel.catId)!;
