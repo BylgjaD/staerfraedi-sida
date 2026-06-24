@@ -822,7 +822,9 @@ function TeacherView({
 }) {
   const [selected, setSelected] = useState<string | null>(null);
   const [previewCategory, setPreviewCategory] = useState<string | null>(null);
-  const [teacherList, setTeacherList] = useState(loadTeachers());
+  const [teacherList, setTeacherList] = useState<typeof TEACHERS>(
+  loadTeachers()
+);
   const students = Object.values(users).filter((u) => u.role === "student");
   const teachers = teacherList.filter(
   (t: (typeof TEACHERS)[number]) => t.role === "teacher"
@@ -995,69 +997,40 @@ setNewTeacherPassword("");
                        {teacher.email}
                       </div>
                      </div>
+                    
 
-<button
-  onClick={() => deleteTeacher(teacher.email)}
-  className="px-3 py-1 rounded border text-red-600"
->
-  Eyða
-</button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </>
-        )}
-        {selected ? (
-          // Student detail view
-          (() => {
-            const student = users[selected];
-            const completedSet = new Set<LevelKey>(student.completed);
-            if (previewCategory) {
-              const cat = CATEGORIES.find((c) => c.id === previewCategory)!;
-              return (
-                <div>
-                  <button onClick={() => setPreviewCategory(null)}
-                    className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors">
-                    <ArrowLeft size={15} /> Til baka
-                  </button>
-                  <CategoryView
-                    category={cat}
-                    completed={completedSet}
-                    onBack={() => setPreviewCategory(null)}
-                    onSelectLevel={() => {}}
-                  />
-                </div>
-              );
-            }
-            return (
-              <div>
-                <button onClick={() => setSelected(null)}
-                  className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors">
-                  <ArrowLeft size={15} /> Allir nemendur
-                </button>
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white"
-                    style={{ background: "#1e3a5f" }}>
-                    {student.name.charAt(0)}
-                  </div>
-                  <div>
-                    <div className="font-bold">{student.name}</div>
-                    <div className="text-xs text-muted-foreground" style={{ fontFamily: "'Inter', sans-serif" }}>{student.email}</div>
-                  </div>
-                </div>
-                <DashboardView
-                  user={student}
-                  completed={completedSet}
-                  onSelectCategory={(catId) => setPreviewCategory(catId)}
-                  isTeacherPreview
-                />
-              </div>
-            );
-          })()
-        ) : (
-          <>
-            <div className="flex items-center gap-3 mb-6">
+<div className="flex gap-2">
+
+  <button
+    onClick={() => {
+      const newName = prompt(
+        "Nýtt nafn kennara:",
+        teacher.name
+      );
+
+      if (!newName) return;
+
+      const updatedTeachers = teacherList.map(
+        (t: (typeof TEACHERS)[number]) =>
+          t.email === teacher.email
+            ? { ...t, name: newName }
+            : t
+      );
+
+      saveTeachers(updatedTeachers);
+      setTeacherList(updatedTeachers);
+    }}
+    className="px-3 py-1 rounded border"
+  >
+    Breyta
+  </button>
+  </div>
+</div>
+))}
+</div>
+)}
+<div className="flex items-center gap-3 mb-6"></div>
+ <div className="flex items-center gap-3 mb-6">
               <Users size={20} style={{ color: "#1e3a5f" }} />
               <h1 className="text-xl font-bold" style={{ color: "#1e3a5f" }}>
                 Nemendur ({students.length})
