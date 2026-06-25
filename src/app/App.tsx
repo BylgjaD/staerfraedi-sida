@@ -14,7 +14,18 @@ import {
   BarChart3,
   ArrowDown,
 } from "lucide-react";
-
+import { 
+  supabase,
+  loadTeachersFromSupabase,
+  saveTeacherToSupabase,
+  deleteTeacherFromSupabase,
+  updateTeacherInSupabase,
+  loadStudentsFromSupabase,
+  saveStudentToSupabase,
+  deleteStudentFromSupabase, 
+  updateStudentInSupabase,
+} from "../Lib/supabase";
+import { useEffect } from "react";
 // ─── Types ───────────────────────────────────────────────────────────────────
 type Level = "δ" | "β" | "α";
 type LevelKey = string; // `${catId}__${secId}__${level}`
@@ -350,8 +361,8 @@ function LoginView({ onLogin }: { onLogin: (email: string, pass: string) => stri
           <div className="space-y-10 mt-8">
             {[
               { icon: "Δ β α", label: "Þrjú þrefaraðir", desc: "Delta · Beta · Alpha" },
-              { icon: "7", label: "Sjö flokkar", desc: "Frá tölum til fjármála" },
-              { icon: "🔓", label: "Kerfisbundið", desc: "Opnaðu næsta stig með framvindu" },
+              { icon: "7", label: "Sjö flokkar", desc: "Frá talnaskilning - fjármála" },
+              { icon: "🔓", label: "Kerfisbundið", desc: "Þú kemst ofar með því að ljúka verkefnum" },
             ].map((item) => (
               <div key={item.label} className="flex items-start gap-4">
                 <div className="w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold shrink-0"
@@ -435,7 +446,7 @@ function LoginView({ onLogin }: { onLogin: (email: string, pass: string) => stri
           </form>
 
           <p className="text-center text-xs text-muted-foreground mt-6">
-            Nýr nemandi? Sláðu bara inn netfangið þitt til að búa til aðgang.
+            Nýr nemandi? Sláðuinn netfangið þitt til að búa til aðgang.
           </p>
         </div>
       </div>
@@ -825,35 +836,56 @@ function TeacherView({
   const [teacherList, setTeacherList] = useState<typeof TEACHERS>(
   loadTeachers()
 );
-  const students = Object.values(users).filter((u) => u.role === "student");
+const [studentList, setStudentList] = useState<UserData[]>([]);
+const [editingTeacher, setEditingTeacher] =
+  useState<(typeof TEACHERS)[number] | null>(null);
+const [editingStudent, setEditingStudent] =
+   useState<UserData | null>(null);
+
+const [editStudentName, setEditStudentName] = useState("");
+const [editStudentEmail, setEditStudentEmail] = useState("");
+const [editName, setEditName] = useState("");
+const [editEmail, setEditEmail] = useState("");
+const [editPassword, setEditPassword] = useState("");
+  const students = studentList;
   const teachers = teacherList.filter(
   (t: (typeof TEACHERS)[number]) => t.role === "teacher"
 );
+useEffect(() => {
+  loadStudentsFromSupabase().then((data) => {
+    console.log("Students from Supabase:", data);
+
+    if (data && data.length > 0) {
+      setStudentList(data as UserData[]);
+    }
+  });
+}, []);
+useEffect(() => {
+  loadStudentsFromSupabase().then((data) => {
+    console.log("Students from Supabase:", data);
+  });
+}, []);
   const isAdmin = currentUser.role === "admin";
   const [adminTab, setAdminTab] = useState<"students" | "teachers">("students");
   const [newTeacherName, setNewTeacherName] = useState("");
  
 const [newTeacherEmail, setNewTeacherEmail] = useState("");
 const [newTeacherPassword, setNewTeacherPassword] = useState("");
-const deleteStudent = (email: string) => {
+const [newStudentName, setNewStudentName] = useState("");
+const [newStudentEmail, setNewStudentEmail] = useState("");
+const deleteStudent = async (email: string) => {
   if (!window.confirm("Ertu viss um að þú viljir eyða þessum nemanda?")) {
     return;
   }
 
-  setUsers((prev) => {
-    const updated = { ...prev };
-    delete updated[email];
+  await deleteStudentFromSupabase(email);
 
-    localStorage.setItem("delta_users", JSON.stringify(updated));
-
-    return updated;
-  });
-
-  if (selected === email) {
-    setSelected(null);
-  }
+  setStudentList((prev) =>
+    prev.filter((s) => s.email !== email)
+  );
 };
-const deleteTeacher = (email: string) => {
+
+const deleteTeacher = async (email: string) => {
   if (!window.confirm("Ertu viss um að þú viljir eyða þessum kennara?")) {
     return;
   }
@@ -863,6 +895,7 @@ const deleteTeacher = (email: string) => {
   );
 
   saveTeachers(updatedTeachers);
+  await deleteTeacherFromSupabase(email);
 setTeacherList(updatedTeachers);
 
 setNewTeacherName("");
@@ -933,6 +966,14 @@ setNewTeacherPassword("");
 
               
             </div>
+
+            {adminTab === "students" && (
+  <div className="bg-card rounded-lg border p-4 mt-4">
+    <h3 className="font-bold mb-4">Nemendur</h3>
+
+    <p>Hér kemur nýja nemendastjórnunin.</p>
+  </div>
+)}
             {adminTab === "teachers" && (
               <div className="bg-card rounded-lg border p-4 mt-4">
                 <h3 className="font-bold mb-4">Kennarar</h3>
@@ -963,24 +1004,29 @@ setNewTeacherPassword("");
 
   <button
     className="px-4 py-2 rounded border"
-    onClick={() => {
+    onClick={async () => {
+  const newTeacher = {
+    email: newTeacherEmail,
+    password: newTeacherPassword,
+    name: newTeacherName,
+    role: "teacher" as const,
+  };
+
   const updatedTeachers = [
     ...loadTeachers(),
-    {
-      email: newTeacherEmail,
-      password: newTeacherPassword,
-      name: newTeacherName,
-      role: "teacher" as const,
-    },
+    newTeacher,
   ];
 
   saveTeachers(updatedTeachers);
+
+  await saveTeacherToSupabase(newTeacher);
 
   setNewTeacherName("");
   setNewTeacherEmail("");
   setNewTeacherPassword("");
   setTeacherList(updatedTeachers);
 }}
+
   >
     ➕ Bæta við kennara
   </button>
@@ -1002,41 +1048,223 @@ setNewTeacherPassword("");
 <div className="flex gap-2">
 
   <button
-    onClick={() => {
-      const newName = prompt(
-        "Nýtt nafn kennara:",
-        teacher.name
-      );
-
-      if (!newName) return;
-
-      const updatedTeachers = teacherList.map(
-        (t: (typeof TEACHERS)[number]) =>
-          t.email === teacher.email
-            ? { ...t, name: newName }
-            : t
-      );
-
-      saveTeachers(updatedTeachers);
-      setTeacherList(updatedTeachers);
-    }}
-    className="px-3 py-1 rounded border"
-  >
-    Breyta
-  </button>
+  onClick={() => {
+    setEditingTeacher(teacher);
+    setEditName(teacher.name);
+    setEditEmail(teacher.email);
+    setEditPassword(teacher.password);
+  }}
+  className="px-3 py-1 rounded border"
+>
+  Breyta
+</button>
+<button
+  onClick={() => deleteTeacher(teacher.email)}
+  className="px-3 py-1 rounded border text-red-600"
+>
+  Eyða
+</button>
   </div>
 </div>
 ))}
 </div>
 )}
-<div className="flex items-center gap-3 mb-6"></div>
- <div className="flex items-center gap-3 mb-6">
-              <Users size={20} style={{ color: "#1e3a5f" }} />
-              <h1 className="text-xl font-bold" style={{ color: "#1e3a5f" }}>
-                Nemendur ({students.length})
-              </h1>
-            </div>
+{editingTeacher && (
+  <div className="bg-card border rounded-lg p-4 mb-6">
+    <h3 className="font-bold mb-4">
+      Breyta kennara
+    </h3>
 
+    <div className="space-y-3">
+
+      <input
+        value={editName}
+        onChange={(e) => setEditName(e.target.value)}
+        placeholder="Nafn"
+        className="border rounded px-3 py-2 w-full"
+      />
+
+      <input
+        value={editEmail}
+        onChange={(e) => setEditEmail(e.target.value)}
+        placeholder="Netfang"
+        className="border rounded px-3 py-2 w-full"
+      />
+
+      <input
+        value={editPassword}
+        onChange={(e) => setEditPassword(e.target.value)}
+        placeholder="Lykilorð"
+        className="border rounded px-3 py-2 w-full"
+      />
+
+      <div className="flex gap-2">
+
+        <button
+          onClick={async () => {
+  const updatedTeacher = {
+    name: editName,
+    email: editEmail,
+    password: editPassword,
+    role: editingTeacher.role,
+  };
+
+  const updatedTeachers = teacherList.map(
+    (t: (typeof TEACHERS)[number]) =>
+      t.email === editingTeacher.email
+        ? {
+            ...t,
+            ...updatedTeacher,
+          }
+        : t
+  );
+
+  saveTeachers(updatedTeachers);
+
+  await updateTeacherInSupabase(
+    editingTeacher.email,
+    updatedTeacher
+  );
+
+  setTeacherList(updatedTeachers);
+  setEditingTeacher(null);
+}}       
+          className="px-4 py-2 rounded border"
+        >
+          Vista
+        </button>
+
+        <button
+          onClick={() => setEditingTeacher(null)}
+          className="px-4 py-2 rounded border"
+        >
+          Hætta við
+        </button>
+
+      </div>
+    </div>
+  </div>
+)}
+{adminTab === "students" && (
+  <>
+<div className="flex items-center gap-3 mb-6"></div>
+{false && (
+  <div className="bg-card border rounded-lg p-4 mb-6">
+    <h3 className="font-bold mb-4">
+      Breyta nemanda
+    </h3>
+
+    <div className="space-y-3">
+
+      <input
+        value={editStudentName}
+        onChange={(e) => setEditStudentName(e.target.value)}
+        placeholder="Nafn"
+        className="border rounded px-3 py-2 w-full"
+      />
+
+      <input
+        value={editStudentEmail}
+        onChange={(e) => setEditStudentEmail(e.target.value)}
+        placeholder="Netfang"
+        className="border rounded px-3 py-2 w-full"
+      />
+
+      <div className="flex gap-2">
+
+        <button
+  onClick={async () => {
+
+    const updatedStudent = {
+      ...editingStudent!,
+      name: editStudentName,
+      email: editStudentEmail,
+    };
+
+    const updatedStudents = studentList.map((s) =>
+      s.email === editingStudent!.email
+        ? updatedStudent
+        : s
+    );
+
+    await updateStudentInSupabase(
+      editingStudent!.email,
+      updatedStudent
+    );
+
+    setStudentList(updatedStudents);
+    setEditingStudent(null);
+
+  }}
+  className="px-4 py-2 rounded border"
+>
+  Vista
+</button>
+
+        <button
+          onClick={() => setEditingStudent(null)}
+          className="px-4 py-2 rounded border"
+        >
+          Hætta við
+        </button>
+
+      </div>
+    </div>
+  </div>
+)}
+<div className="flex items-center gap-3 mb-6">
+  <Users size={20} style={{ color: "#1e3a5f" }} />
+  <h1 className="text-xl font-bold" style={{ color: "#1e3a5f" }}>
+    Nemendur ({students.length})
+  </h1>
+</div>
+
+{!editingStudent && (
+  <div className="bg-card border rounded-lg p-4 mb-6">
+    
+  <h3>Bæta við nýjum nemanda</h3>
+  <div className="space-y-2">
+
+    <input
+      type="text"
+      placeholder="Nafn nemanda"
+      value={newStudentName}
+      onChange={(e) => setNewStudentName(e.target.value)}
+      className="border rounded px-3 py-2 w-full"
+    />
+
+    <input
+      type="email"
+      placeholder="Netfang"
+      value={newStudentEmail}
+      onChange={(e) => setNewStudentEmail(e.target.value)}
+      className="border rounded px-3 py-2 w-full"
+    />
+
+    <button
+      className="px-4 py-2 rounded border"
+      onClick={async () => {
+  const newStudent = {
+    email: newStudentEmail,
+    name: newStudentName,
+    role: "student",
+    completed: [],
+  };
+
+  await saveStudentToSupabase(newStudent);
+
+  setNewStudentName("");
+  setNewStudentEmail("");
+
+  console.log("Nemandi vistaður:", newStudent);
+}}
+    >
+      ➕ Bæta við nemanda
+    </button>
+      </div>
+      </div>  
+
+)}      
             {/* Summary stats */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
               {[
@@ -1085,7 +1313,7 @@ setNewTeacherPassword("");
               {students.map((student, idx) => {
                 const comp = new Set<LevelKey>(student.completed);
                 return (
-                  <button key={student.email} onClick={() => setSelected(student.email)}
+                  <div key={student.email} onClick={() => setSelected(student.email)}
                     className={`w-full text-left grid grid-cols-[1fr,repeat(7,auto)] gap-0 px-5 py-3.5 hover:bg-muted/40 transition-colors ${idx < students.length - 1 ? "border-b border-border" : ""}`}>
                     <div className="flex items-center gap-2.5 overflow-hidden">
                       <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
@@ -1097,6 +1325,20 @@ setNewTeacherPassword("");
                         <div className="text-xs text-muted-foreground truncate" style={{ fontFamily: "'Inter', sans-serif" }}>
                           {student.email}
                         </div>
+<button
+  onClick={(e) => {
+    e.stopPropagation();
+
+    console.log("Breyta smellt", student);
+
+    setEditingStudent(student);
+    setEditStudentName(student.name);
+    setEditStudentEmail(student.email);
+  }}
+  className="mt-1 mr-2 px-2 py-1 rounded border text-xs"
+>
+  Breyta
+</button>
                         <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -1108,6 +1350,65 @@ setNewTeacherPassword("");
                           </button>
                       </div>
                     </div>
+                    {editingStudent?.email === student.email && (
+  <div className="col-span-full mt-4 border rounded-lg p-4 bg-white">
+    <h3 className="font-bold mb-4">
+      Breyta nemanda
+    </h3>
+
+    <input
+      value={editStudentName}
+      onChange={(e) => setEditStudentName(e.target.value)}
+      className="border rounded px-3 py-2 w-full mb-3"
+      placeholder="Nafn"
+    />
+
+    <input
+      value={editStudentEmail}
+      onChange={(e) => setEditStudentEmail(e.target.value)}
+      className="border rounded px-3 py-2 w-full mb-3"
+      placeholder="Netfang"
+    />
+
+    <div className="flex gap-2">
+      <button
+        onClick={async () => {
+
+          const updatedStudent = {
+            ...editingStudent,
+            name: editStudentName,
+            email: editStudentEmail,
+          };
+
+          const updatedStudents = studentList.map((s) =>
+            s.email === editingStudent.email
+              ? updatedStudent
+              : s
+          );
+
+          await updateStudentInSupabase(
+            editingStudent.email,
+            updatedStudent
+          );
+
+          setStudentList(updatedStudents);
+          setEditingStudent(null);
+        }}
+        className="px-4 py-2 rounded border"
+      >
+        Vista
+      </button>
+
+      <button
+        onClick={() => setEditingStudent(null)}
+        className="px-4 py-2 rounded border"
+      >
+        Hætta við
+      </button>
+    </div>
+  </div>
+)}
+                  
                     {CATEGORIES.map((c) => {
                       const { done, total } = categoryProgress(comp, c.id);
                       const pct = Math.round((done / total) * 100);
@@ -1131,12 +1432,14 @@ setNewTeacherPassword("");
                         </div>
                       );
                     })}
-                  </button>
+                  </div>
                 );
               })}
             </div>
           </>
         )}
+         </>
+      )}
       </main>
     </div>
   );
