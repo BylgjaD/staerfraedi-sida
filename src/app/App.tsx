@@ -26,6 +26,7 @@ import {
   updateStudentInSupabase,
 } from "../Lib/supabase";
 import { useEffect } from "react";
+import TeacherManagement from "./TeacherManagement";
 // ─── Types ───────────────────────────────────────────────────────────────────
 type Level = "δ" | "β" | "α";
 type LevelKey = string; // `${catId}__${secId}__${level}`
@@ -268,7 +269,7 @@ function loadTeachers() {
   return TEACHERS;
 }
 
-function saveTeachers(teachers: typeof TEACHERS) {
+function saveTeachers(teachers: any[]) {
   localStorage.setItem("delta_teachers", JSON.stringify(teachers));
 }
 
@@ -974,7 +975,29 @@ setNewTeacherPassword("");
     <p>Hér kemur nýja nemendastjórnunin.</p>
   </div>
 )}
-            {adminTab === "teachers" && (
+           {adminTab === "teachers" && (
+  <TeacherManagement
+    teacherList={teacherList}
+    newTeacherName={newTeacherName}
+    setNewTeacherName={setNewTeacherName}
+    newTeacherEmail={newTeacherEmail}
+    setNewTeacherEmail={setNewTeacherEmail}
+    newTeacherPassword={newTeacherPassword}
+    setNewTeacherPassword={setNewTeacherPassword}
+    saveTeachers={saveTeachers}
+    saveTeacherToSupabase={saveTeacherToSupabase}
+    setTeacherList={setTeacherList}
+    setEditingTeacher={setEditingTeacher}
+    setEditName={setEditName}
+    setEditEmail={setEditEmail}
+    setEditPassword={setEditPassword}
+    editName={editName}
+    editEmail={editEmail}
+    editPassword={editPassword}
+    editingTeacher={editingTeacher}
+    updateTeacherInSupabase={updateTeacherInSupabase}
+  />
+)}
               <div className="bg-card rounded-lg border p-4 mt-4">
                 <h3 className="font-bold mb-4">Kennarar</h3>
                 <div className="mb-4 space-y-2">
@@ -1068,7 +1091,7 @@ setNewTeacherPassword("");
 </div>
 ))}
 </div>
-)}
+)
 {editingTeacher && (
   <div className="bg-card border rounded-lg p-4 mb-6">
     <h3 className="font-bold mb-4">

@@ -86,7 +86,8 @@ export async function deleteStudentFromSupabase(email: string) {
   if (error) {
     console.error(error);
   }
-}export async function updateStudentInSupabase(
+}
+export async function updateStudentInSupabase(
   oldEmail: string,
   student: any
 ) {
