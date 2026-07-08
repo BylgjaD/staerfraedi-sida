@@ -24,9 +24,11 @@ import {
   saveStudentToSupabase,
   deleteStudentFromSupabase, 
   updateStudentInSupabase,
-} from "../Lib/supabase";
+
+} from "../lib/supabase";
 import { useEffect } from "react";
 import TeacherManagement from "./TeacherManagement";
+import StudentManagement from "./StudentManagement";
 // ─── Types ───────────────────────────────────────────────────────────────────
 type Level = "δ" | "β" | "α";
 type LevelKey = string; // `${catId}__${secId}__${level}`
@@ -72,11 +74,11 @@ const CATEGORIES: CategoryData[] = [
     sections: [
       { id: "hugareikningur",  name: "Hugareikningur",  abbr: "H" },
       { id: "slumpreikningur", name: "Slumpreikningur", abbr: "S" },
-      { id: "rod_asgorð",      name: "Röð ásgörð",      abbr: "RÁ" },
+      { id: "rod_adgerda",      name: "Röð aðgerða",      abbr: "RA" },
       { id: "frumtolur",       name: "Frumtölur",       abbr: "F" },
       { id: "talnamengi",      name: "Talnamengi",      abbr: "T" },
     ],
-    treeRows: [["hugareikningur"], ["slumpreikningur"], ["rod_asgorð"], ["frumtolur"], ["talnamengi"]],
+    treeRows: [["hugareikningur"], ["slumpreikningur"], ["rod_adgerda"], ["frumtolur"], ["talnamengi"]],
   },
   {
     id: "brot_og_prosentur",
@@ -87,9 +89,9 @@ const CATEGORIES: CategoryData[] = [
       { id: "almenn_brot",   name: "Almenn brot",   abbr: "AB" },
       { id: "prosentur",     name: "Prósentur",     abbr: "P" },
       { id: "hlutfoll",      name: "Hlutföll",      abbr: "H" },
-      { id: "breytipastur",  name: "Breytipástur",  abbr: "B" },
+      { id: "breytithattur",  name: "Breytiþáttur",  abbr: "B" },
     ],
-    treeRows: [["almenn_brot"], ["prosentur"], ["hlutfoll"], ["breytipastur"]],
+    treeRows: [["almenn_brot"], ["prosentur"], ["hlutfoll"], ["breytithattur"]],
   },
   {
     id: "algebra",
@@ -122,24 +124,24 @@ const CATEGORIES: CategoryData[] = [
       { id: "hnitakerfi_sec", name: "Hnitakerfi",    abbr: "H" },
       { id: "hallatala",      name: "Hallatala",     abbr: "HL" },
       { id: "linuleg_foll",   name: "Línuleg föll",  abbr: "LF" },
-      { id: "falla_likon",    name: "Falla líkon",   abbr: "FL" },
+      { id: "falla_likon",    name: "Falla líkön",   abbr: "FL" },
     ],
     treeRows: [["hnitakerfi_sec"], ["hallatala"], ["linuleg_foll"], ["falla_likon"]],
   },
   {
     id: "rumfraedi",
     name: "Rúmfræði",
-    icon: "△",
+    icon: "δ",
     accentColor: "#dc2626",
     sections: [
-      { id: "formfraedi",      name: "Formfræði",                  abbr: "FF" },
+      { id: "staerdfraediform",      name: "Stærðfræðiform",                  abbr: "FF" },
       { id: "ummal_flatarmal", name: "Ummál og Flatarmál",         abbr: "UF" },
       { id: "rummal",          name: "Rúmmál",                     abbr: "R" },
-      { id: "maelikvord",      name: "Mælikvörðar og mælieiningar", abbr: "MM" },
+      { id: "maelikvardi",      name: "Mælikvarðar og mælieiningar", abbr: "MM" },
       { id: "hornafraedi",     name: "Hornafræði",                 abbr: "HF" },
-      { id: "pythagoras",      name: "Þýjagóras",                  abbr: "Þ" },
+      { id: "pythagoras",      name: "Pýþagóras",                  abbr: "PG" },
     ],
-    treeRows: [["formfraedi"], ["ummal_flatarmal"], ["rummal"], ["maelikvord"], ["hornafraedi"], ["pythagoras"]],
+    treeRows: [["staerdfraediform"], ["ummal_flatarmal"], ["rummal"], ["maelikvardi"], ["hornafraedi"], ["pythagoras"]],
   },
   {
     id: "tolfraedi",
@@ -151,11 +153,11 @@ const CATEGORIES: CategoryData[] = [
       { id: "midgildi",      name: "Miðgildi",     abbr: "MG" },
       { id: "tidasta_gildi", name: "Tíðasta gildi", abbr: "TG" },
       { id: "likur",         name: "Líkur",        abbr: "L" },
-      { id: "mjndrit",       name: "Mjndrit",      abbr: "MJ" },
+      { id: "myndrit",       name: "Myndrit",      abbr: "MJ" },
       { id: "tolkun_grafa",  name: "Túlkun grafa", abbr: "TG" },
       { id: "mengi",         name: "Mengi",        abbr: "MN" },
     ],
-    treeRows: [["medaltal"], ["midgildi"], ["tidasta_gildi"], ["likur"], ["mjndrit"], ["tolkun_grafa"], ["mengi"]],
+    treeRows: [["medaltal"], ["midgildi"], ["tidasta_gildi"], ["likur"], ["myndrit"], ["tolkun_grafa"], ["mengi"]],
   },
   {
     id: "fjarmala",
@@ -361,9 +363,9 @@ function LoginView({ onLogin }: { onLogin: (email: string, pass: string) => stri
           </div>
           <div className="space-y-10 mt-8">
             {[
-              { icon: "Δ β α", label: "Þrjú þrefaraðir", desc: "Delta · Beta · Alpha" },
-              { icon: "7", label: "Sjö flokkar", desc: "Frá talnaskilning - fjármála" },
-              { icon: "🔓", label: "Kerfisbundið", desc: "Þú kemst ofar með því að ljúka verkefnum" },
+              { icon: "δ β α", label: "Þrjú stig", desc: "Delta · Beta · Alpha" },
+              { icon: "7", label: "Sjö flokkar", desc: "Frá talnaskilningi - fjármála" },
+              { icon: "🔓", label: "Kerfisbundið", desc: "Þú kemst hærra með því að klára hvern flokk" },
             ].map((item) => (
               <div key={item.label} className="flex items-start gap-4">
                 <div className="w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold shrink-0"
@@ -379,7 +381,7 @@ function LoginView({ onLogin }: { onLogin: (email: string, pass: string) => stri
           </div>
         </div>
         <div className="relative z-10 text-white/30 text-sm">
-          Kennari? Notaðu: kennari@delta.is / kennari123
+          Kennari? Notaðu: kennari@delta.is
         </div>
         {/* Decorative circles */}
         <div className="absolute -bottom-20 -right-20 w-72 h-72 rounded-full opacity-5"
@@ -848,10 +850,7 @@ const [editStudentEmail, setEditStudentEmail] = useState("");
 const [editName, setEditName] = useState("");
 const [editEmail, setEditEmail] = useState("");
 const [editPassword, setEditPassword] = useState("");
-  const students = studentList;
-  const teachers = teacherList.filter(
-  (t: (typeof TEACHERS)[number]) => t.role === "teacher"
-);
+  
 useEffect(() => {
   loadStudentsFromSupabase().then((data) => {
     console.log("Students from Supabase:", data);
@@ -861,11 +860,7 @@ useEffect(() => {
     }
   });
 }, []);
-useEffect(() => {
-  loadStudentsFromSupabase().then((data) => {
-    console.log("Students from Supabase:", data);
-  });
-}, []);
+
   const isAdmin = currentUser.role === "admin";
   const [adminTab, setAdminTab] = useState<"students" | "teachers">("students");
   const [newTeacherName, setNewTeacherName] = useState("");
@@ -897,18 +892,20 @@ const deleteTeacher = async (email: string) => {
 
   saveTeachers(updatedTeachers);
   await deleteTeacherFromSupabase(email);
-setTeacherList(updatedTeachers);
 
-setNewTeacherName("");
-setNewTeacherEmail("");
-setNewTeacherPassword("");
+  setTeacherList(updatedTeachers);
 
+  setNewTeacherName("");
+  setNewTeacherEmail("");
+  setNewTeacherPassword("");
 };
-  return (
-    <div className="min-h-screen bg-background" style={{ fontFamily: "'Outfit', sans-serif" }}>
-      <header className="sticky top-0 z-20 bg-card border-b border-border">
+return (
+  <div className="min-h-screen bg-background" style={{ fontFamily: 
+    "'Outfit', sans-serif" }}>
+  
+  <header className="sticky top-0 z-20 bg-card border-b border-border">
         <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+<div className="flex items-center gap-3">
             <span className="text-2xl font-bold" style={{ color: "#c8952a" }}>Δ</span>
             <span className="font-bold text-sm" style={{ color: "#1e3a5f" }}>DELTA</span>
             <div className="hidden sm:flex items-center gap-1.5 ml-2 px-2.5 py-1 rounded-full text-xs font-semibold"
@@ -920,7 +917,7 @@ setNewTeacherPassword("");
                 <div
       className="ml-2 px-2 py-1 rounded text-xs font-semibold"
       style={{ background: "#fbbf24", color: "#000" }}
-    >
+       >
       👑 Admin
     </div>
 
@@ -939,7 +936,7 @@ setNewTeacherPassword("");
     </button>
   </div>
 )}
-          </div>
+</div>
           <button onClick={onLogout}
             className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
             <LogOut size={15} /> <span className="hidden sm:inline">Útskrá</span>
@@ -965,16 +962,36 @@ setNewTeacherPassword("");
                 Kennarar
               </button>
 
-              
             </div>
+         
 
-            {adminTab === "students" && (
-  <div className="bg-card rounded-lg border p-4 mt-4">
-    <h3 className="font-bold mb-4">Nemendur</h3>
+          
+      {adminTab === "students" && (
+ <StudentManagement
+  studentList={studentList}
+  setStudentList={setStudentList}
 
-    <p>Hér kemur nýja nemendastjórnunin.</p>
-  </div>
+  newStudentName={newStudentName}
+  setNewStudentName={setNewStudentName}
+
+  newStudentEmail={newStudentEmail}
+  setNewStudentEmail={setNewStudentEmail}
+
+  editingStudent={editingStudent}
+  setEditingStudent={setEditingStudent}
+
+  editStudentName={editStudentName}
+  setEditStudentName={setEditStudentName}
+
+  editStudentEmail={editStudentEmail}
+  setEditStudentEmail={setEditStudentEmail}
+
+  saveStudentToSupabase={saveStudentToSupabase}
+  updateStudentInSupabase={updateStudentInSupabase}
+  
+/>
 )}
+          
            {adminTab === "teachers" && (
   <TeacherManagement
     teacherList={teacherList}
@@ -996,477 +1013,17 @@ setNewTeacherPassword("");
     editPassword={editPassword}
     editingTeacher={editingTeacher}
     updateTeacherInSupabase={updateTeacherInSupabase}
-  />
-)}
-              <div className="bg-card rounded-lg border p-4 mt-4">
-                <h3 className="font-bold mb-4">Kennarar</h3>
-                <div className="mb-4 space-y-2">
-  <input
-    type="text"
-    placeholder="Nafn kennara"
-    value={newTeacherName}
-    onChange={(e) => setNewTeacherName(e.target.value)}
-    className="border rounded px-3 py-2 w-full"
-  />
-
-  <input
-    type="email"
-    placeholder="Netfang"
-    value={newTeacherEmail}
-    onChange={(e) => setNewTeacherEmail(e.target.value)}
-    className="border rounded px-3 py-2 w-full"
-  />
-
-  <input
-    type="text"
-    placeholder="Lykilorð"
-    value={newTeacherPassword}
-    onChange={(e) => setNewTeacherPassword(e.target.value)}
-    className="border rounded px-3 py-2 w-full"
-  />
-
-  <button
-    className="px-4 py-2 rounded border"
-    onClick={async () => {
-  const newTeacher = {
-    email: newTeacherEmail,
-    password: newTeacherPassword,
-    name: newTeacherName,
-    role: "teacher" as const,
-  };
-
-  const updatedTeachers = [
-    ...loadTeachers(),
-    newTeacher,
-  ];
-
-  saveTeachers(updatedTeachers);
-
-  await saveTeacherToSupabase(newTeacher);
-
-  setNewTeacherName("");
-  setNewTeacherEmail("");
-  setNewTeacherPassword("");
-  setTeacherList(updatedTeachers);
-}}
-
-  >
-    ➕ Bæta við kennara
-  </button>
-</div>
-
-                {teachers.map((teacher: (typeof TEACHERS)[number]) => (
-                  <div
-                    key={teacher.email}
-                    className="flex justify-between items-center py-3 border-b"
-                  >
-                    <div>
-                     <div className="font-semibold">{teacher.name}</div>
-                     <div className="text-sm text-muted-foreground">
-                       {teacher.email}
-                      </div>
-                     </div>
-                    
-
-<div className="flex gap-2">
-
-  <button
-  onClick={() => {
-    setEditingTeacher(teacher);
-    setEditName(teacher.name);
-    setEditEmail(teacher.email);
-    setEditPassword(teacher.password);
-  }}
-  className="px-3 py-1 rounded border"
->
-  Breyta
-</button>
-<button
-  onClick={() => deleteTeacher(teacher.email)}
-  className="px-3 py-1 rounded border text-red-600"
->
-  Eyða
-</button>
-  </div>
-</div>
-))}
-</div>
-)
-{editingTeacher && (
-  <div className="bg-card border rounded-lg p-4 mb-6">
-    <h3 className="font-bold mb-4">
-      Breyta kennara
-    </h3>
-
-    <div className="space-y-3">
-
-      <input
-        value={editName}
-        onChange={(e) => setEditName(e.target.value)}
-        placeholder="Nafn"
-        className="border rounded px-3 py-2 w-full"
-      />
-
-      <input
-        value={editEmail}
-        onChange={(e) => setEditEmail(e.target.value)}
-        placeholder="Netfang"
-        className="border rounded px-3 py-2 w-full"
-      />
-
-      <input
-        value={editPassword}
-        onChange={(e) => setEditPassword(e.target.value)}
-        placeholder="Lykilorð"
-        className="border rounded px-3 py-2 w-full"
-      />
-
-      <div className="flex gap-2">
-
-        <button
-          onClick={async () => {
-  const updatedTeacher = {
-    name: editName,
-    email: editEmail,
-    password: editPassword,
-    role: editingTeacher.role,
-  };
-
-  const updatedTeachers = teacherList.map(
-    (t: (typeof TEACHERS)[number]) =>
-      t.email === editingTeacher.email
-        ? {
-            ...t,
-            ...updatedTeacher,
-          }
-        : t
-  );
-
-  saveTeachers(updatedTeachers);
-
-  await updateTeacherInSupabase(
-    editingTeacher.email,
-    updatedTeacher
-  );
-
-  setTeacherList(updatedTeachers);
-  setEditingTeacher(null);
-}}       
-          className="px-4 py-2 rounded border"
-        >
-          Vista
-        </button>
-
-        <button
-          onClick={() => setEditingTeacher(null)}
-          className="px-4 py-2 rounded border"
-        >
-          Hætta við
-        </button>
-
-      </div>
-    </div>
-  </div>
-)}
-{adminTab === "students" && (
-  <>
-<div className="flex items-center gap-3 mb-6"></div>
-{false && (
-  <div className="bg-card border rounded-lg p-4 mb-6">
-    <h3 className="font-bold mb-4">
-      Breyta nemanda
-    </h3>
-
-    <div className="space-y-3">
-
-      <input
-        value={editStudentName}
-        onChange={(e) => setEditStudentName(e.target.value)}
-        placeholder="Nafn"
-        className="border rounded px-3 py-2 w-full"
-      />
-
-      <input
-        value={editStudentEmail}
-        onChange={(e) => setEditStudentEmail(e.target.value)}
-        placeholder="Netfang"
-        className="border rounded px-3 py-2 w-full"
-      />
-
-      <div className="flex gap-2">
-
-        <button
-  onClick={async () => {
-
-    const updatedStudent = {
-      ...editingStudent!,
-      name: editStudentName,
-      email: editStudentEmail,
-    };
-
-    const updatedStudents = studentList.map((s) =>
-      s.email === editingStudent!.email
-        ? updatedStudent
-        : s
-    );
-
-    await updateStudentInSupabase(
-      editingStudent!.email,
-      updatedStudent
-    );
-
-    setStudentList(updatedStudents);
-    setEditingStudent(null);
-
-  }}
-  className="px-4 py-2 rounded border"
->
-  Vista
-</button>
-
-        <button
-          onClick={() => setEditingStudent(null)}
-          className="px-4 py-2 rounded border"
-        >
-          Hætta við
-        </button>
-
-      </div>
-    </div>
-  </div>
-)}
-<div className="flex items-center gap-3 mb-6">
-  <Users size={20} style={{ color: "#1e3a5f" }} />
-  <h1 className="text-xl font-bold" style={{ color: "#1e3a5f" }}>
-    Nemendur ({students.length})
-  </h1>
-</div>
-
-{!editingStudent && (
-  <div className="bg-card border rounded-lg p-4 mb-6">
-    
-  <h3>Bæta við nýjum nemanda</h3>
-  <div className="space-y-2">
-
-    <input
-      type="text"
-      placeholder="Nafn nemanda"
-      value={newStudentName}
-      onChange={(e) => setNewStudentName(e.target.value)}
-      className="border rounded px-3 py-2 w-full"
     />
-
-    <input
-      type="email"
-      placeholder="Netfang"
-      value={newStudentEmail}
-      onChange={(e) => setNewStudentEmail(e.target.value)}
-      className="border rounded px-3 py-2 w-full"
-    />
-
-    <button
-      className="px-4 py-2 rounded border"
-      onClick={async () => {
-  const newStudent = {
-    email: newStudentEmail,
-    name: newStudentName,
-    role: "student",
-    completed: [],
-  };
-
-  await saveStudentToSupabase(newStudent);
-
-  setNewStudentName("");
-  setNewStudentEmail("");
-
-  console.log("Nemandi vistaður:", newStudent);
-}}
-    >
-      ➕ Bæta við nemanda
-    </button>
-      </div>
-      </div>  
-
-)}      
-            {/* Summary stats */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-              {[
-                { label: "Nemendur", value: students.length, icon: <Users size={18} /> },
-                {
-                  label: "Meðalframvinda",
-                  value: `${Math.round(students.reduce((s, u) => {
-                    const comp = new Set<LevelKey>(u.completed);
-                    const total = CATEGORIES.reduce((t, c) => t + c.sections.length * 3, 0);
-                    return s + (u.completed.length / total) * 100;
-                  }, 0) / Math.max(students.length, 1))}%`,
-                  icon: <BarChart3 size={18} />,
-                },
-                {
-                  label: "Flestir flokkar",
-                  value: Math.max(0, ...students.map((u) => {
-                    const comp = new Set<LevelKey>(u.completed);
-                    return CATEGORIES.filter((c) => categoryProgress(comp, c.id).done > 0).length;
-                  })),
-                  icon: <BookOpen size={18} />,
-                },
-                {
-                  label: "Flestar lokningar",
-                  value: Math.max(0, ...students.map((u) => u.completed.length)),
-                  icon: <Award size={18} />,
-                },
-              ].map((stat) => (
-                <div key={stat.label} className="bg-card border border-border rounded-xl p-4">
-                  <div className="text-muted-foreground mb-2">{stat.icon}</div>
-                  <div className="text-2xl font-bold" style={{ color: "#1e3a5f" }}>{stat.value}</div>
-                  <div className="text-xs text-muted-foreground">{stat.label}</div>
-                </div>
-              ))}
-            </div>
-
-            {/* Student table */}
-            <div className="bg-card border border-border rounded-xl overflow-hidden">
-              <div className="grid grid-cols-[1fr,repeat(7,auto)] gap-0 text-xs font-semibold text-muted-foreground border-b border-border px-5 py-3 overflow-x-auto">
-                <div>Nemandi</div>
-                {CATEGORIES.map((c) => (
-                  <div key={c.id} className="text-center px-2" style={{ minWidth: 36, color: c.accentColor }} title={c.name}>
-                    {c.icon}
-                  </div>
-                ))}
-              </div>
-              {students.map((student, idx) => {
-                const comp = new Set<LevelKey>(student.completed);
-                return (
-                  <div key={student.email} onClick={() => setSelected(student.email)}
-                    className={`w-full text-left grid grid-cols-[1fr,repeat(7,auto)] gap-0 px-5 py-3.5 hover:bg-muted/40 transition-colors ${idx < students.length - 1 ? "border-b border-border" : ""}`}>
-                    <div className="flex items-center gap-2.5 overflow-hidden">
-                      <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
-                        style={{ background: "#1e3a5f" }}>
-                        {student.name.charAt(0)}
-                      </div>
-                      <div className="min-w-0">
-                        <div className="font-semibold text-sm truncate">{student.name}</div>
-                        <div className="text-xs text-muted-foreground truncate" style={{ fontFamily: "'Inter', sans-serif" }}>
-                          {student.email}
-                        </div>
-<button
-  onClick={(e) => {
-    e.stopPropagation();
-
-    console.log("Breyta smellt", student);
-
-    setEditingStudent(student);
-    setEditStudentName(student.name);
-    setEditStudentEmail(student.email);
-  }}
-  className="mt-1 mr-2 px-2 py-1 rounded border text-xs"
->
-  Breyta
-</button>
-                        <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          deleteStudent(student.email);
-                        }}
-                        className="mt-1 px-2 py-1 rounded bg-red-600 text-white text-xs"
-                        >
-                          Eyða
-                          </button>
-                      </div>
-                    </div>
-                    {editingStudent?.email === student.email && (
-  <div className="col-span-full mt-4 border rounded-lg p-4 bg-white">
-    <h3 className="font-bold mb-4">
-      Breyta nemanda
-    </h3>
-
-    <input
-      value={editStudentName}
-      onChange={(e) => setEditStudentName(e.target.value)}
-      className="border rounded px-3 py-2 w-full mb-3"
-      placeholder="Nafn"
-    />
-
-    <input
-      value={editStudentEmail}
-      onChange={(e) => setEditStudentEmail(e.target.value)}
-      className="border rounded px-3 py-2 w-full mb-3"
-      placeholder="Netfang"
-    />
-
-    <div className="flex gap-2">
-      <button
-        onClick={async () => {
-
-          const updatedStudent = {
-            ...editingStudent,
-            name: editStudentName,
-            email: editStudentEmail,
-          };
-
-          const updatedStudents = studentList.map((s) =>
-            s.email === editingStudent.email
-              ? updatedStudent
-              : s
-          );
-
-          await updateStudentInSupabase(
-            editingStudent.email,
-            updatedStudent
-          );
-
-          setStudentList(updatedStudents);
-          setEditingStudent(null);
-        }}
-        className="px-4 py-2 rounded border"
-      >
-        Vista
-      </button>
-
-      <button
-        onClick={() => setEditingStudent(null)}
-        className="px-4 py-2 rounded border"
-      >
-        Hætta við
-      </button>
-    </div>
-  </div>
-)}
-                  
-                    {CATEGORIES.map((c) => {
-                      const { done, total } = categoryProgress(comp, c.id);
-                      const pct = Math.round((done / total) * 100);
-                      return (
-                        <div key={c.id} className="flex items-center justify-center px-2" style={{ minWidth: 36 }}>
-                          {done === total ? (
-                            <CheckCircle2 size={14} className="text-emerald-500" />
-                          ) : done > 0 ? (
-                            <div className="relative w-7 h-7">
-                              <svg viewBox="0 0 28 28" className="w-full h-full -rotate-90">
-                                <circle cx="14" cy="14" r="11" fill="none" stroke="#ede9e3" strokeWidth="3" />
-                                <circle cx="14" cy="14" r="11" fill="none" stroke={c.accentColor} strokeWidth="3"
-                                  strokeDasharray={`${(pct / 100) * 69.1} 69.1`} strokeLinecap="round" />
-                              </svg>
-                              <span className="absolute inset-0 flex items-center justify-center text-[8px] font-bold"
-                                style={{ color: c.accentColor }}>{pct}%</span>
-                            </div>
-                          ) : (
-                            <div className="w-5 h-5 rounded-full bg-muted" />
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              })}
-            </div>
-          </>
-        )}
-         </>
       )}
-      </main>
-    </div>
-  );
-}
+
+    </>
+  )}
+
+</main>
+</div>
+);
+}      
+
 
 // ─── App (main router) ────────────────────────────────────────────────────────
 export default function App() {
