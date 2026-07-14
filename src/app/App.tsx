@@ -31,17 +31,13 @@ import TeacherManagement from "./TeacherManagement";
 import StudentManagement from "./StudentManagement";
 import { LEVELS, LEVEL_META, CategoryData, SectionData, CATEGORIES, } from "../Data/categories";
 // ─── Types ───────────────────────────────────────────────────────────────────
-type Level = "δ" | "β" | "α";
-type LevelKey = string; // `${catId}__${secId}__${level}`
-type ViewType = "login" | "dashboard" | "category" | "level" | "teacher";
 
-
-interface UserData {
-  email: string;
-  name: string;
-  role: "student" | "teacher" | "admin";
-  completed: LevelKey[];
-}
+import {
+  Level,
+  LevelKey,
+  ViewType,
+  UserData,
+} from "../lib/types";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 

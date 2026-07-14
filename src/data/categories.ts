@@ -1,4 +1,4 @@
-export type Level = "δ" | "β" | "α";
+import { Level } from "../lib/types";
 export interface SectionData {
   id: string;
   name: string;
