@@ -27,8 +27,8 @@ import {
 
 } from "../lib/supabase";
 import { useEffect } from "react";
-import TeacherManagement from "./TeacherManagement";
-import StudentManagement from "./StudentManagement";
+import TeacherManagement from "./components/TeacherManagement";
+import StudentManagement from "./components/StudentManagement";
 import { LEVELS, LEVEL_META, CategoryData, SectionData, CATEGORIES, } from "../Data/categories";
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -59,7 +59,7 @@ const TEACHERS: {
   role: TeacherRole;
 }[] = [
   {
-    email: "bylgjaadmin@delta.is",
+    email: "admin@delta.is",
     password: "Skoli123",
     name: "Bylgja",
     role: "admin"
@@ -77,39 +77,18 @@ const TEACHERS: {
     role: "teacher"
   }
 ];
-function loadTeachers() {
-  const stored = localStorage.getItem("delta_teachers");
-
-  if (stored) {
-    return JSON.parse(stored);
-  }
-
-  localStorage.setItem("delta_teachers", JSON.stringify(TEACHERS));
-  return TEACHERS;
-}
-
-function saveTeachers(teachers: any[]) {
-  localStorage.setItem("delta_teachers", JSON.stringify(teachers));
-}
-
-function loadUsers(): Record<string, UserData> {
-  try {
-    const s = localStorage.getItem("delta_users");
-    return s ? JSON.parse(s) : {};
-  } catch {
-    return {};
-  }
-}
-
-function saveUsers(users: Record<string, UserData>) {
-  localStorage.setItem("delta_users", JSON.stringify(users));
-}
+import {
+  loadTeachers,
+  saveTeachers,
+  loadUsers,
+  saveUsers,
+} from "../lib/storage";
 
 function initUsers(): Record<string, UserData> {
   const stored = loadUsers();
   if (Object.keys(stored).length > 0) return stored;
 
-  // Seed 3 demo students
+  
   const alg = "algebra";
   const tal = "talnaskilningur";
 
