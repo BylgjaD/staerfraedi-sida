@@ -1,9 +1,9 @@
 import {
   CATEGORIES,
   LEVELS,
-  Level,
   SectionData,
 } from "../Data/categories";
+import type { Level } from "../lib/types";
 
 export type LevelKey = string;
 
