@@ -3,56 +3,39 @@ import {
   Lock,
   CheckCircle2,
   LogOut,
-  Users,
   ArrowLeft,
   ChevronRight,
   BookOpen,
   Eye,
   EyeOff,
-  GraduationCap,
-  Award,
-  BarChart3,
-  ArrowDown,
 } from "lucide-react";
-import { 
-  supabase,
-  loadTeachersFromSupabase,
-  saveTeacherToSupabase,
-  deleteTeacherFromSupabase,
-  updateTeacherInSupabase,
-  loadStudentsFromSupabase,
-  saveStudentToSupabase,
-  deleteStudentFromSupabase, 
-  updateStudentInSupabase,
-
-} from "../lib/supabase";
-import { useEffect } from "react";
-import TeacherManagement from "./components/TeacherManagement";
-import StudentManagement from "./components/StudentManagement";
 import { LEVELS, LEVEL_META, CategoryData, SectionData, CATEGORIES, } from "../Data/categories";
 // ─── Types ───────────────────────────────────────────────────────────────────
-
 import {
   Level,
   LevelKey,
   ViewType,
   UserData,
 } from "../lib/types";
-
 // ─── Constants ───────────────────────────────────────────────────────────────
-
 // ─── Prerequisite System ─────────────────────────────────────────────────────
-
 import {
   lk,
   isUnlocked,
   categoryProgress,
-} from "../Lib/progress";
-
+} from "../lib/progress";
 // ─── Teacher View ─────────────────────────────────────────────────────────────
 import TeacherView from "./components/TeacherView";
-
+// ─── Dashboard View ───────────────────────────────────────────────────────────
+import DashboardView from "./components/DashboardView";
+// ─── Category View ───────────────────────────────────────────────────────────
+import CategoryView from "./components/CategoryView";
 // ─── Storage / Auth ───────────────────────────────────────────────────────────
+import {
+  loadTeachers,
+  loadUsers,
+  saveUsers,
+} from "../lib/storage";
 type TeacherRole = "teacher" | "admin";
 const TEACHERS: {
   email: string;
@@ -79,21 +62,11 @@ const TEACHERS: {
     role: "teacher"
   }
 ];
-import {
-  loadTeachers,
-  saveTeachers,
-  loadUsers,
-  saveUsers,
-} from "../lib/storage";
-
 function initUsers(): Record<string, UserData> {
   const stored = loadUsers();
   if (Object.keys(stored).length > 0) return stored;
-
-  
   const alg = "algebra";
   const tal = "talnaskilningur";
-
   const u1: LevelKey[] = [
     ...CATEGORIES[0].sections.flatMap((s) => LEVELS.map((l) => lk(tal, s.id, l))),
     lk("brot_og_prosentur", "almenn_brot", "δ"),
@@ -117,7 +90,6 @@ function initUsers(): Record<string, UserData> {
     lk(tal, "hugareikningur", "δ"),
     lk(tal, "hugareikningur", "β"),
   ];
-
   const users: Record<string, UserData> = {
     "sigrun@nemandi.is": { email: "sigrun@nemandi.is", name: "Sigrun Björnsdóttir",  role: "student", completed: u1 },
     "bjorn@nemandi.is":  { email: "bjorn@nemandi.is",  name: "Björn Sigurðsson",     role: "student", completed: u2 },
@@ -126,7 +98,6 @@ function initUsers(): Record<string, UserData> {
   saveUsers(users);
   return users;
 }
-
 // ─── Login View ───────────────────────────────────────────────────────────────
 function LoginView({ onLogin }: { onLogin: (email: string, pass: string) => string | null }) {
   const [email, setEmail] = useState("");
@@ -134,7 +105,6 @@ function LoginView({ onLogin }: { onLogin: (email: string, pass: string) => stri
   const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) { setError("Vinsamlegast sláðu inn netfang"); return; }
@@ -145,8 +115,7 @@ function LoginView({ onLogin }: { onLogin: (email: string, pass: string) => stri
       setLoading(false);
     }, 400);
   };
-
-  return (
+return (
     <div className="min-h-screen flex" style={{ fontFamily: "'Outfit', sans-serif" }}>
       {/* Left panel */}
       <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-12 text-white relative overflow-hidden"
@@ -255,281 +224,9 @@ function LoginView({ onLogin }: { onLogin: (email: string, pass: string) => stri
   );
 }
 
-// ─── Dashboard View ───────────────────────────────────────────────────────────
-function DashboardView({
-  user, completed, onSelectCategory, onLogout, isTeacherPreview = false,
-}: {
-  user: UserData;
-  completed: Set<LevelKey>;
-  onSelectCategory: (id: string) => void;
-  onLogout?: () => void;
-  isTeacherPreview?: boolean;
-}) {
-  const totalLevels = CATEGORIES.reduce((s, c) => s + c.sections.length * 3, 0);
-  const totalDone = CATEGORIES.reduce((s, c) => {
-    const { done } = categoryProgress(completed, c.id);
-    return s + done;
-  }, 0);
-  const overallPct = Math.round((totalDone / totalLevels) * 100);
-
-  return (
-    <div className="min-h-screen bg-background" style={{ fontFamily: "'Outfit', sans-serif" }}>
-      {/* Header */}
-      <header className="sticky top-0 z-20 bg-card border-b border-border">
-        <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <span className="text-2xl font-bold" style={{ color: "#c8952a" }}>Δ</span>
-            <div>
-              <span className="font-bold text-sm" style={{ color: "#1e3a5f" }}>DELTA</span>
-              <span className="text-xs text-muted-foreground ml-2 hidden sm:inline">Mælistika í stærðfræði</span>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            {!isTeacherPreview && (
-              <>
-                <span className="text-sm text-muted-foreground hidden sm:block" style={{ fontFamily: "'Inter', sans-serif" }}>
-                  {user.name}
-                </span>
-                <button onClick={onLogout}
-                  className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded">
-                  <LogOut size={15} />
-                  <span className="hidden sm:inline">Útskrá</span>
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-5xl mx-auto px-4 py-8">
-        {/* Progress banner */}
-        {!isTeacherPreview && (
-          <div className="rounded-xl p-5 mb-8 text-white"
-            style={{ background: "linear-gradient(135deg, #1e3a5f 0%, #2d5a8f 100%)" }}>
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <div className="text-lg font-semibold">Góðan daginn, {user.name.split(" ")[0]}!</div>
-                <div className="text-sm text-white/70 mt-0.5">
-                  {totalDone} af {totalLevels} stigum lokið · {overallPct}% framvinda
-                </div>
-              </div>
-              <div className="text-3xl font-bold" style={{ color: "#c8952a" }}>{overallPct}%</div>
-            </div>
-            <div className="mt-4 h-2 rounded-full bg-white/20 overflow-hidden">
-              <div className="h-full rounded-full transition-all duration-700"
-                style={{ width: `${overallPct}%`, background: "#c8952a" }} />
-            </div>
-          </div>
-        )}
-
-        <h2 className="text-sm font-semibold text-muted-foreground tracking-widest uppercase mb-4">Flokkar</h2>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {CATEGORIES.map((cat) => {
-            const { done, total } = categoryProgress(completed, cat.id);
-            const pct = Math.round((done / total) * 100);
-            const firstLocked = !CATEGORIES.find((c) => c.id === cat.id)?.sections.some((s) =>
-              isUnlocked(completed, lk(cat.id, s.id, "δ"))
-            );
-
-            return (
-              <button key={cat.id} onClick={() => onSelectCategory(cat.id)}
-                className="group text-left bg-card border border-border rounded-xl p-5 hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="w-11 h-11 rounded-lg flex items-center justify-center text-xl font-bold"
-                    style={{ background: `${cat.accentColor}15`, color: cat.accentColor }}>
-                    {cat.icon}
-                  </div>
-                  <ChevronRight size={16} className="text-muted-foreground mt-1 group-hover:translate-x-0.5 transition-transform" />
-                </div>
-                <div className="font-semibold text-sm mb-1" style={{ color: "#1e3a5f" }}>{cat.name}</div>
-                <div className="text-xs text-muted-foreground mb-3" style={{ fontFamily: "'Inter', sans-serif" }}>
-                  {cat.sections.length} hlutar · {done}/{total} stig
-                </div>
-                <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                  <div className="h-full rounded-full transition-all duration-500"
-                    style={{ width: `${pct}%`, background: cat.accentColor }} />
-                </div>
-                {done === 0 && (
-                  <div className="text-xs mt-2" style={{ color: cat.accentColor }}>
-                    Byrja hér →
-                  </div>
-                )}
-                {done === total && (
-                  <div className="text-xs mt-2 text-emerald-600 font-semibold flex items-center gap-1">
-                    <CheckCircle2 size={12} /> Lokið!
-                  </div>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </main>
-    </div>
-  );
-}
-
 // ─── Section Node (tree cell) ─────────────────────────────────────────────────
-function SectionNode({
-  catId, section, completed, onSelectLevel,
-}: {
-  catId: string;
-  section: SectionData;
-  completed: Set<LevelKey>;
-  onSelectLevel: (catId: string, secId: string, level: Level) => void;
-}) {
-  const levelStates = LEVELS.map((level) => {
-    const key = lk(catId, section.id, level);
-    const done = completed.has(key);
-    const unlocked = isUnlocked(completed, key);
-    return { level, key, done, unlocked };
-  });
-
-  const sectionDone = levelStates.every((s) => s.done);
-  const sectionStarted = levelStates.some((s) => s.done || s.unlocked);
-
-  return (
-    <div className={`rounded-xl border bg-card transition-all duration-200 w-full max-w-xs ${sectionDone ? "border-emerald-300" : "border-border"}`}
-      style={{ minWidth: 180 }}>
-      <div className="px-4 pt-3 pb-2 border-b border-border flex items-center justify-between">
-        <div>
-          <div className="font-semibold text-sm" style={{ color: "#1e3a5f" }}>{section.name}</div>
-          <div className="text-xs text-muted-foreground font-mono">{section.abbr}</div>
-        </div>
-        {sectionDone && <CheckCircle2 size={16} className="text-emerald-500 shrink-0" />}
-      </div>
-      <div className="px-3 py-3 flex gap-2">
-        {levelStates.map(({ level, done, unlocked }) => {
-          const meta = LEVEL_META[level];
-          return (
-            <button
-              key={level}
-              onClick={() => unlocked && onSelectLevel(catId, section.id, level)}
-              disabled={!unlocked}
-              title={`${section.name} ${meta.label} (${level})`}
-              className={`flex-1 flex flex-col items-center gap-1 py-2 rounded-lg text-xs font-bold transition-all duration-150 ${
-                done
-                  ? `${meta.bgClass} text-white shadow-sm`
-                  : unlocked
-                  ? `bg-card border-2 ${meta.borderClass} ${meta.colorClass} hover:opacity-80 active:scale-95`
-                  : "bg-muted/50 text-muted-foreground cursor-not-allowed"
-              }`}>
-              {done ? (
-                <CheckCircle2 size={13} />
-              ) : unlocked ? null : (
-                <Lock size={11} />
-              )}
-              <span>{level}</span>
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
 
 // ─── Category View ────────────────────────────────────────────────────────────
-function CategoryView({
-  category, completed, onBack, onSelectLevel,
-}: {
-  category: CategoryData;
-  completed: Set<LevelKey>;
-  onBack: () => void;
-  onSelectLevel: (catId: string, secId: string, level: Level) => void;
-}) {
-  const { done, total } = categoryProgress(completed, category.id);
-  const pct = Math.round((done / total) * 100);
-
-  return (
-    <div className="min-h-screen bg-background" style={{ fontFamily: "'Outfit', sans-serif" }}>
-      <header className="sticky top-0 z-20 bg-card border-b border-border">
-        <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
-          <button onClick={onBack}
-            className="flex items-center gap-2 text-sm font-semibold hover:text-foreground text-muted-foreground transition-colors">
-            <ArrowLeft size={16} /> Til baka
-          </button>
-          <div className="flex items-center gap-2">
-            <span className="text-xl font-bold" style={{ color: category.accentColor }}>{category.icon}</span>
-            <span className="font-bold text-sm hidden sm:block" style={{ color: "#1e3a5f" }}>{category.name}</span>
-          </div>
-          <div className="text-xs text-muted-foreground" style={{ fontFamily: "'Inter', sans-serif" }}>
-            {done}/{total} stig
-          </div>
-        </div>
-        <div className="h-1 overflow-hidden">
-          <div className="h-full transition-all duration-500" style={{ width: `${pct}%`, background: category.accentColor }} />
-        </div>
-      </header>
-
-      <main className="max-w-3xl mx-auto px-4 py-8">
-        {/* Level legend */}
-        <div className="flex items-center gap-4 mb-8 flex-wrap">
-          {LEVELS.map((l) => (
-            <div key={l} className="flex items-center gap-1.5">
-              <div className={`w-3 h-3 rounded-sm ${LEVEL_META[l].bgClass}`} />
-              <span className="text-xs text-muted-foreground">{l} · {LEVEL_META[l].label}</span>
-            </div>
-          ))}
-          <div className="flex items-center gap-1.5">
-            <Lock size={12} className="text-muted-foreground" />
-            <span className="text-xs text-muted-foreground">Læst</span>
-          </div>
-        </div>
-
-        {/* Tree layout */}
-        <div className="flex flex-col items-center gap-0">
-          {category.treeRows.map((row, rowIdx) => {
-            const sections = row.map((secId) => category.sections.find((s) => s.id === secId)!).filter(Boolean);
-
-            return (
-              <div key={rowIdx} className="w-full flex flex-col items-center">
-                {/* Connector from previous row */}
-                {rowIdx > 0 && (
-                  <div className="flex justify-center items-center h-10 w-full relative">
-                    {row.length === 1 && category.treeRows[rowIdx - 1].length > 1 ? (
-                      // Converging: multiple → one
-                      <div className="flex items-end justify-center gap-0 w-full" style={{ maxWidth: 420 }}>
-                        <div className="flex-1 h-px" style={{ borderTop: "2px solid #d1c9be", marginBottom: 20 }} />
-                        <div className="w-px self-stretch" style={{ background: "#d1c9be", height: 40 }} />
-                        <div className="flex-1 h-px" style={{ borderTop: "2px solid #d1c9be", marginBottom: 20 }} />
-                      </div>
-                    ) : row.length > 1 && category.treeRows[rowIdx - 1].length === 1 ? (
-                      // Branching: one → multiple
-                      <div className="flex items-start justify-center gap-0 w-full" style={{ maxWidth: 420 }}>
-                        <div className="flex-1 h-px" style={{ borderTop: "2px solid #d1c9be", marginTop: 20 }} />
-                        <div className="w-px self-stretch" style={{ background: "#d1c9be", height: 40 }} />
-                        <div className="flex-1 h-px" style={{ borderTop: "2px solid #d1c9be", marginTop: 20 }} />
-                      </div>
-                    ) : (
-                      // Straight connector
-                      <div className="w-px h-full" style={{ background: "#d1c9be" }} />
-                    )}
-                  </div>
-                )}
-
-                {/* Row of section nodes */}
-                <div className={`flex justify-center gap-4 w-full ${row.length > 1 ? "items-start" : "items-center"}`}
-                  style={{ maxWidth: row.length > 1 ? 520 : 300, margin: "0 auto" }}>
-                  {sections.map((sec) => (
-                    <div key={sec.id} className="flex-1" style={{ maxWidth: row.length > 1 ? 240 : 300 }}>
-                      <SectionNode
-                        catId={category.id}
-                        section={sec}
-                        completed={completed}
-                        onSelectLevel={onSelectLevel}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </main>
-    </div>
-  );
-}
-
 // ─── Level View ───────────────────────────────────────────────────────────────
 function LevelView({
   category, section, level, isCompleted, onComplete, onBack,
@@ -619,7 +316,6 @@ function LevelView({
     </div>
   );
 }
-
 // ─── App (main router) ────────────────────────────────────────────────────────
 export default function App() {
   const [users, setUsers] = useState<Record<string, UserData>>(initUsers);
@@ -642,11 +338,10 @@ export default function App() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [activeLevel, setActiveLevel] = useState<{ catId: string; secId: string; level: Level } | null>(null);
 
-  const completed = useMemo<Set<LevelKey>>(() => {
-    if (!currentUser) return new Set();
-    return new Set<LevelKey>(users[currentUser.email]?.completed || []);
-  }, [currentUser, users]);
-const login = (email: string, pass: string): string | null => {
+ const completed = currentUser
+  ? users[currentUser.email]?.completed || []
+  : [];
+ const login = (email: string, pass: string): string | null => {
  const teacherAccount = loadTeachers().find(
   (t: (typeof TEACHERS)[number]) => t.email === email
 );
@@ -681,7 +376,6 @@ if (teacherAccount) {
     setView("dashboard");
     return null;
   };
-
   const logout = () => {
     setCurrentUser(null);
     localStorage.removeItem("delta_current_user");
@@ -712,7 +406,7 @@ if (teacherAccount) {
       currentUser={currentUser!}
     />
   )
-
+ 
   if (view === "level" && activeLevel) {
     const cat = CATEGORIES.find((c) => c.id === activeLevel.catId)!;
     const sec = cat.sections.find((s) => s.id === activeLevel.secId)!;
@@ -721,7 +415,7 @@ if (teacherAccount) {
         category={cat}
         section={sec}
         level={activeLevel.level}
-        isCompleted={completed.has(lk(activeLevel.catId, activeLevel.secId, activeLevel.level))}
+        isCompleted={completed.includes(lk(activeLevel.catId, activeLevel.secId, activeLevel.level))}
         onComplete={() => completeLevel(activeLevel.catId, activeLevel.secId, activeLevel.level)}
         onBack={() => setView("category")}
       />
@@ -742,13 +436,18 @@ if (teacherAccount) {
       />
     );
   }
-
+if (!currentUser) return null;
   return (
     <DashboardView
-      user={currentUser!}
-      completed={completed}
-      onSelectCategory={(id) => { setSelectedCategory(id); setView("category"); }}
-      onLogout={logout}
-    />
+     users={users}
+     setUsers={setUsers}
+     currentUser={currentUser}
+     onSelectCategory={(id) => {
+  setSelectedCategory(id);
+  setView("category");
+}}
+     onLogout={logout}
+     
+/>
   );
 }

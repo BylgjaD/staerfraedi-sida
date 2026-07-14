@@ -46,17 +46,27 @@ export function buildPrereqMap(): Record<LevelKey, LevelKey[]> {
     return map;
   }
   const PREREQS = buildPrereqMap();
-  export function isUnlocked(completed: Set<LevelKey>, key: LevelKey): boolean {
+  export function isUnlocked(completed: LevelKey[], key: LevelKey): boolean {
   const prereqs = PREREQS[key];
   if (!prereqs || prereqs.length === 0) return true;
-  return prereqs.every((p) => completed.has(p));
+  return prereqs.every((p) => completed.includes(p));
 }
-export function categoryProgress(completed: Set<LevelKey>, catId: string): { done: number; total: number } {
+export function categoryProgress(
+  completed: LevelKey[],
+  catId: string
+): { done: number; total: number } {
   const cat = CATEGORIES.find((c) => c.id === catId)!;
+
   const total = cat.sections.length * 3;
+
   const done = cat.sections.reduce(
-    (sum, sec) => sum + LEVELS.filter((l) => completed.has(lk(catId, sec.id, l))).length,
+    (sum, sec) =>
+      sum +
+      LEVELS.filter((l) =>
+        completed.includes(lk(catId, sec.id, l))
+      ).length,
     0
   );
+
   return { done, total };
 }
