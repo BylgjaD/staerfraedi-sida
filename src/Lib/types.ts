@@ -11,6 +11,7 @@ export type ViewType =
 
 export interface UserData {
   email: string;
+  password:string;
   name: string;
   role: "student" | "teacher" | "admin";
   completed: LevelKey[];

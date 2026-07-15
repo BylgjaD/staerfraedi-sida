@@ -1,6 +1,7 @@
 import { Users } from "lucide-react";
 import { CheckCircle2 } from "lucide-react";
 
+
 interface StudentManagementProps {
     studentList: any[];
     editStudentName:string;
@@ -17,6 +18,8 @@ interface StudentManagementProps {
     newStudentEmail: string;
     setNewStudentEmail: React.Dispatch<React.SetStateAction<string>>;
     deleteStudent: (email: string) => Promise<void>;
+    editStudentPassword: string;
+    setEditStudentPassword: React.Dispatch<React.SetStateAction<string>>;
   }
 
 export default function StudentManagement({
@@ -35,6 +38,9 @@ export default function StudentManagement({
   newStudentEmail,
   deleteStudent,
   editingStudent,
+  setEditStudentPassword,
+  editStudentPassword,
+
 }: StudentManagementProps) {
   const cancelEdit = () => {
     if (editingStudent) {
@@ -118,10 +124,18 @@ export default function StudentManagement({
             placeholder="Netfang"
             value={editingStudent ? editStudentEmail : newStudentEmail}
             onChange={(e) =>
-             editingStudent
-              ? setEditStudentEmail(e.target.value)
-              : setNewStudentEmail(e.target.value)
-}
+              editingStudent
+                ? setEditStudentEmail(e.target.value)
+                : setNewStudentEmail(e.target.value)
+            }
+            className="border rounded px-3 py-2 w-full"
+          />
+
+          <input
+           placeholder="Lykilorð"
+            type="password"
+            value={editStudentPassword}
+            onChange={(e) => setEditStudentPassword(e.target.value)}
             className="border rounded px-3 py-2 w-full"
           />
 
@@ -131,6 +145,7 @@ export default function StudentManagement({
               onClick={async () => {
                 const newStudent = {
                   email: newStudentEmail,
+                  password: "delta123",
                   name: newStudentName,
                   role: "student",
                   completed: [],

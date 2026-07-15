@@ -17,6 +17,13 @@ import {
   ViewType,
   UserData,
 } from "../lib/types";
+
+import {
+  loadStudentsFromSupabase,
+  saveStudentToSupabase,
+  getStudentByEmail,
+
+} from "../lib/supabase";
 // ─── Constants ───────────────────────────────────────────────────────────────
 // ─── Prerequisite System ─────────────────────────────────────────────────────
 import {
@@ -91,15 +98,19 @@ function initUsers(): Record<string, UserData> {
     lk(tal, "hugareikningur", "β"),
   ];
   const users: Record<string, UserData> = {
-    "sigrun@nemandi.is": { email: "sigrun@nemandi.is", name: "Sigrun Björnsdóttir",  role: "student", completed: u1 },
-    "bjorn@nemandi.is":  { email: "bjorn@nemandi.is",  name: "Björn Sigurðsson",     role: "student", completed: u2 },
-    "helga@nemandi.is":  { email: "helga@nemandi.is",  name: "Helga Magnúsdóttir",   role: "student", completed: u3 },
+    "sigrun@nemandi.is": { email: "sigrun@nemandi.is", name: "Sigrun Björnsdóttir",  role: "student",  completed: u1, password: "delta123" },
+    "bjorn@nemandi.is":  { email: "bjorn@nemandi.is",  name: "Björn Sigurðsson",     role: "student",  completed: u2, password: "delta123" },
+    "helga@nemandi.is":  { email: "helga@nemandi.is",  name: "Helga Magnúsdóttir",   role: "student",  completed: u3, password: "delta123" },
   };
   saveUsers(users);
   return users;
 }
 // ─── Login View ───────────────────────────────────────────────────────────────
-function LoginView({ onLogin }: { onLogin: (email: string, pass: string) => string | null }) {
+function LoginView({
+  onLogin,
+}: {
+  onLogin: (email: string, pass: string) => Promise<string | null>
+}) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
@@ -109,8 +120,8 @@ function LoginView({ onLogin }: { onLogin: (email: string, pass: string) => stri
     e.preventDefault();
     if (!email.trim()) { setError("Vinsamlegast sláðu inn netfang"); return; }
     setLoading(true);
-    setTimeout(() => {
-      const err = onLogin(email.trim().toLowerCase(), password);
+    setTimeout(async() => {
+      const err = await onLogin(email.trim().toLowerCase(), password);
       if (err) setError(err);
       setLoading(false);
     }, 400);
@@ -216,7 +227,7 @@ return (
           </form>
 
           <p className="text-center text-xs text-muted-foreground mt-6">
-            Nýr nemandi? Sláðuinn netfangið þitt til að búa til aðgang.
+            Ekki með aðgang? Hafðu samband við kennarann þinn  
           </p>
         </div>
       </div>
@@ -344,7 +355,7 @@ export default function App() {
  const completed = currentUser
   ? users[currentUser.email]?.completed || []
   : [];
- const login = (email: string, pass: string): string | null => {
+ const login = async (email: string, pass: string): Promise<string | null> => {
 
   
 const teacherAccount = loadTeachers().find(
@@ -364,6 +375,7 @@ if (teacherAccount) {
   name: teacherAccount.name,
   role: teacherAccount.role,
   completed: [],
+  password: teacherAccount.password,
 };
 
   setCurrentUser(teacher);
@@ -372,17 +384,18 @@ if (teacherAccount) {
   return null;
 }
     // Student: create or load
-    const existing = users[email];
-    const user: UserData = existing ?? { email, name: email.split("@")[0], role: "student", completed: [] };
-    if (!existing) {
-      const updated = { ...users, [email]: user };
-      setUsers(updated);
-      saveUsers(updated);
-    }
-    setCurrentUser(user);
-    localStorage.setItem("delta_current_user", JSON.stringify(user));
-    setView("dashboard");
-    return null;
+    const existing = await getStudentByEmail(email);
+if (!existing) {
+  return "Nemandi fannst ekki";
+}
+if (pass !== existing.password) {
+  return "Rangt lykilorð";
+}
+setCurrentUser(existing);
+localStorage.setItem("delta_current_user", JSON.stringify(existing));
+setView("dashboard");
+return null;
+
   };
   const logout = () => {
     setCurrentUser(null);

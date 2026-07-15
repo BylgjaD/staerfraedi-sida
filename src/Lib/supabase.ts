@@ -68,12 +68,16 @@ export async function loadStudentsFromSupabase() {
 }
 
 export async function saveStudentToSupabase(student: any) {
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("students")
-    .insert([student]);
+    .insert([student])
+    .select();
+
+  console.log("INSERT DATA:", data);
 
   if (error) {
-    console.error(error);
+    console.error("SUPABASE ERROR:", error);
+    alert(error.message);
   }
 }
 
@@ -99,4 +103,16 @@ export async function updateStudentInSupabase(
   if (error) {
     console.error(error);
   }
+}
+export async function getStudentByEmail(email: string) {
+  const { data, error } = await supabase
+    .from("students")
+    .select("*")
+    .eq("email", email)
+    .single();
+
+  if (error) {
+    return null;
+  }
+  return data;
 }
