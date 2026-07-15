@@ -2,7 +2,7 @@ import {
   CATEGORIES,
   LEVELS,
   SectionData,
-} from "../Data/categories";
+} from "../data/categories";
 import type { Level } from "../lib/types";
 
 export type LevelKey = string;

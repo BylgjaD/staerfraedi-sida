@@ -9,7 +9,7 @@ import {
   Eye,
   EyeOff,
 } from "lucide-react";
-import { LEVELS, LEVEL_META, CategoryData, SectionData, CATEGORIES, } from "../Data/categories";
+import { LEVELS, LEVEL_META, CategoryData, SectionData, CATEGORIES, } from "../data/categories";
 // ─── Types ───────────────────────────────────────────────────────────────────
 import {
   Level,

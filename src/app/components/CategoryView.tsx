@@ -14,11 +14,11 @@ import type {
 import {
   LEVELS,
   LEVEL_META,
-} from "../../Data/categories";
+} from "../../data/categories";
 
 import type {
   CategoryData,
-} from "../../Data/categories";
+} from "../../data/categories";
 
 import SectionNode from "./SectionNode";
 

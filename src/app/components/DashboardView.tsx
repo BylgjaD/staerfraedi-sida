@@ -12,7 +12,7 @@ import {
   CATEGORIES,
   LEVELS,
   LEVEL_META,
-} from "../../Data/categories";
+} from "../../data/categories";
 
 import {
   lk,

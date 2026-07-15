@@ -10,11 +10,11 @@ import type {
 import {
   LEVELS,
   LEVEL_META,
-} from "../../Data/categories";
+} from "../../data/categories";
 
 import type {
   SectionData,
-} from "../../Data/categories";
+} from "../../data/categories";
 import {
   lk,
   isUnlocked,
