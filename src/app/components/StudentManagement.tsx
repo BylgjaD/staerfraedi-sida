@@ -34,8 +34,18 @@ export default function StudentManagement({
   newStudentName,
   newStudentEmail,
   deleteStudent,
+  editingStudent,
 }: StudentManagementProps) {
-  // Simple, corrected render structure
+  const cancelEdit = () => {
+    if (editingStudent) {
+      setEditingStudent(null);
+      setEditStudentName("");
+      setEditStudentEmail("");
+    } else {
+      setNewStudentName("");
+      setNewStudentEmail("");
+    }
+  };
   return (
     <div>
       <div className="flex items-center gap-3 mb-6">
@@ -53,7 +63,7 @@ export default function StudentManagement({
         <div className="text-sm">{student.email}</div>
       </div>
       
-      <div className="flex items-center space-x-4">
+      <div className="flex items-center gap-2">
         <button
           onClick={() => {
             setEditingStudent(student);
@@ -64,9 +74,19 @@ export default function StudentManagement({
         >
           Breyta
         </button>
+        <button
+  onClick={() => deleteStudent(student.email)}
+  className="px-3 py-1 rounded border text-red-600"
+>
+  Eyða
+</button>
              
         <div className="text-sm text-muted-foreground">
-  Framvinda kemur fljótlega...
+          <button
+  className="text-sm text-blue-600 hover:underline"
+>
+  Skoða framvindu →
+</button>
 </div>
 
       </div>
@@ -75,21 +95,33 @@ export default function StudentManagement({
 ))}
  
       <div className="bg-card border rounded-lg p-4 mb-6">
-        <h3 className="font-bold mb-4">Bæta við nýjum nemanda</h3>
+        <h3 className="font-bold mb-4">
+          {editingStudent
+             ? "Breyta nemanda"
+               : "Bæta við nýjum nemanda"}
+                                          </h3>
         <div className="space-y-3">
           <input
             type="text"
             placeholder="Nafn nemanda"
-            value={newStudentName}
-            onChange={(e) => setNewStudentName(e.target.value)}
+            value={editingStudent ? editStudentName : newStudentName}
+            onChange={(e) =>
+             editingStudent
+               ? setEditStudentName(e.target.value)
+               : setNewStudentName(e.target.value)
+}
             className="border rounded px-3 py-2 w-full"
           />
 
           <input
             type="email"
             placeholder="Netfang"
-            value={newStudentEmail}
-            onChange={(e) => setNewStudentEmail(e.target.value)}
+            value={editingStudent ? editStudentEmail : newStudentEmail}
+            onChange={(e) =>
+             editingStudent
+              ? setEditStudentEmail(e.target.value)
+              : setNewStudentEmail(e.target.value)
+}
             className="border rounded px-3 py-2 w-full"
           />
 
@@ -118,15 +150,14 @@ setNewStudentEmail("");
               
               }}
             >
-              ➕ Bæta við nemanda
+              {editingStudent
+  ? "💾 Vista breytingar"
+  : "➕ Bæta við nemanda"}
             </button>
 
             <button
               className="px-4 py-2 rounded border"
-              onClick={() => {
-                setNewStudentName("");
-                setNewStudentEmail("");
-              }}
+                 onClick={cancelEdit}
             >
               Hætta við
             </button>
@@ -135,4 +166,4 @@ setNewStudentEmail("");
       </div>
     </div>
   );
-}
+  }
