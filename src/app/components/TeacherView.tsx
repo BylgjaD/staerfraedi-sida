@@ -139,7 +139,7 @@ return (
       </header>
 
       <main className="max-w-5xl mx-auto px-4 py-8">
-        {isAdmin && (
+        {isAdmin ? (
           <>
             <div className="mb-6 flex gap-2">
               <button
@@ -182,6 +182,7 @@ return (
 
   saveStudentToSupabase={saveStudentToSupabase}
   updateStudentInSupabase={updateStudentInSupabase}
+  deleteStudent={deleteStudent}
   
 />
 )}
@@ -210,6 +211,32 @@ return (
     />
       )}
 
+    </>
+  ): (
+    <>
+       <StudentManagement
+       studentList={studentList}
+  setStudentList={setStudentList}
+
+  newStudentName={newStudentName}
+  setNewStudentName={setNewStudentName}
+
+  newStudentEmail={newStudentEmail}
+  setNewStudentEmail={setNewStudentEmail}
+
+  editingStudent={editingStudent}
+  setEditingStudent={setEditingStudent}
+
+  editStudentName={editStudentName}
+  setEditStudentName={setEditStudentName}
+
+  editStudentEmail={editStudentEmail}
+  setEditStudentEmail={setEditStudentEmail}
+
+  saveStudentToSupabase={saveStudentToSupabase}
+  updateStudentInSupabase={updateStudentInSupabase}
+  deleteStudent={deleteStudent}
+      />
     </>
   )}
 

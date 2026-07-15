@@ -44,7 +44,7 @@ const TEACHERS: {
   role: TeacherRole;
 }[] = [
   {
-    email: "admin@delta.is",
+    email: "bylgjaadmin@delta.is",
     password: "Skoli123",
     name: "Bylgja",
     role: "admin"
@@ -330,7 +330,10 @@ export default function App() {
       const s = localStorage.getItem("delta_current_user");
       if (s) {
         const u = JSON.parse(s);
-        return u.role === "teacher" ? "teacher" : "dashboard";
+        const isTeacher =
+  u.role === "teacher" || u.role === "admin";
+
+    return isTeacher ? "teacher" : "dashboard";
       }
     } catch {}
     return "login";
@@ -342,9 +345,14 @@ export default function App() {
   ? users[currentUser.email]?.completed || []
   : [];
  const login = (email: string, pass: string): string | null => {
- const teacherAccount = loadTeachers().find(
+
+  
+const teacherAccount = loadTeachers().find(
   (t: (typeof TEACHERS)[number]) => t.email === email
 );
+
+console.log("Teachers:", loadTeachers());
+console.log("Found:", teacherAccount);
 
 if (teacherAccount) {
   if (pass !== teacherAccount.password) {
@@ -436,6 +444,8 @@ if (teacherAccount) {
       />
     );
   }
+  console.log("VIEW =", view);
+console.log("ROLE =", currentUser?.role);
 if (!currentUser) return null;
   return (
     <DashboardView

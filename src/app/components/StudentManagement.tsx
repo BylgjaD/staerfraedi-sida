@@ -1,8 +1,6 @@
 import { Users } from "lucide-react";
 import { CheckCircle2 } from "lucide-react";
 
-
-
 interface StudentManagementProps {
     studentList: any[];
     editStudentName:string;
@@ -18,6 +16,7 @@ interface StudentManagementProps {
     setNewStudentName: React.Dispatch<React.SetStateAction<string>>;
     newStudentEmail: string;
     setNewStudentEmail: React.Dispatch<React.SetStateAction<string>>;
+    deleteStudent: (email: string) => Promise<void>;
   }
 
 export default function StudentManagement({
@@ -34,6 +33,7 @@ export default function StudentManagement({
   setNewStudentEmail,
   newStudentName,
   newStudentEmail,
+  deleteStudent,
 }: StudentManagementProps) {
   // Simple, corrected render structure
   return (
