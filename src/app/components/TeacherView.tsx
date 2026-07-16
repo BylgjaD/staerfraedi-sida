@@ -64,6 +64,7 @@ export default function TeacherView({
     const [newTeacherPassword, setNewTeacherPassword] = useState("");
     const [newStudentName, setNewStudentName] = useState("");
     const [newStudentEmail, setNewStudentEmail] = useState("");
+    const [editStudentPassword, setEditStudentPassword] = useState("");
     
     const deleteStudent = async (email: string) => {
       if (!window.confirm("Ertu viss um að þú viljir eyða þessum nemanda?")) {
@@ -183,6 +184,8 @@ return (
   saveStudentToSupabase={saveStudentToSupabase}
   updateStudentInSupabase={updateStudentInSupabase}
   deleteStudent={deleteStudent}
+  editStudentPassword={editStudentPassword}
+  setEditStudentPassword={setEditStudentPassword}
   
 />
 )}
@@ -236,6 +239,9 @@ return (
   saveStudentToSupabase={saveStudentToSupabase}
   updateStudentInSupabase={updateStudentInSupabase}
   deleteStudent={deleteStudent}
+  editStudentPassword={editStudentPassword}
+  setEditStudentPassword={setEditStudentPassword}
+  
       />
     </>
   )}
