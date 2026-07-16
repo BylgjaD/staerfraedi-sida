@@ -15,6 +15,7 @@ import {
 } from "../../lib/supabase";
 
 import TeacherDashboard from "./TeacherDashboard";
+import AdminDashboard from "./AdminDashboard";
 import { LogOut, GraduationCap } from "lucide-react";
 import StudentManagement from "./StudentManagement";
 import TeacherManagement from "./TeacherManagement";
@@ -104,10 +105,14 @@ return (
 <div className="flex items-center gap-3">
             <span className="text-2xl font-bold" style={{ color: "#c8952a" }}>Δ</span>
             <span className="font-bold text-sm" style={{ color: "#1e3a5f" }}>DELTA</span>
-            <div className="hidden sm:flex items-center gap-1.5 ml-2 px-2.5 py-1 rounded-full text-xs font-semibold"
-              style={{ background: "#1e3a5f15", color: "#1e3a5f" }}>
-              <GraduationCap size={12} /> Kennari
-            </div>
+            {!isAdmin && (
+              <div
+              className="hidden sm:flex items-center gap-1.5 ml-2 px-2.5 py-1 rounded-full text-xs font-semibold"
+              style={{ background: "#1e3a5f15", color: "#1e3a5f" }}
+              >
+                <GraduationCap size={12} /> Kennari
+                </div>
+              )}
             {isAdmin && (
               <div className="flex items-center gap-3">
                 <div
@@ -159,9 +164,12 @@ return (
               </button>
 
             </div>
-         
-
-          
+            {currentUser.role === "admin" ? (
+              <AdminDashboard />
+            ) : (
+            <TeacherDashboard />
+            )}
+        
       {adminTab === "students" && (
  <StudentManagement
   studentList={studentList}
