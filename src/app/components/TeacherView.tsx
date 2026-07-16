@@ -14,6 +14,7 @@ import {
   deleteStudentFromSupabase,
 } from "../../lib/supabase";
 
+import TeacherDashboard from "./TeacherDashboard";
 import { LogOut, GraduationCap } from "lucide-react";
 import StudentManagement from "./StudentManagement";
 import TeacherManagement from "./TeacherManagement";
@@ -217,6 +218,8 @@ return (
     </>
   ): (
     <>
+    <TeacherDashboard />
+
        <StudentManagement
        studentList={studentList}
   setStudentList={setStudentList}
