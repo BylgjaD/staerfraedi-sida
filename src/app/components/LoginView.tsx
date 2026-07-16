@@ -54,7 +54,7 @@ return (
           </div>
         </div>
         <div className="relative z-10 text-white/30 text-sm">
-          Kennari? Notaðu: kennari@delta.is
+          Kennari? Hafðu samband við bylgjaskoli@gmail.com
         </div>
         {/* Decorative circles */}
         <div className="absolute -bottom-20 -right-20 w-72 h-72 rounded-full opacity-5"
