@@ -63,7 +63,7 @@ export default function AdminDashboard() {
             <h2 className="text-lg font-semibold mb-2">Umsjón með nemendum</h2>
             <p className="text-sm text-muted-foreground mb-4"> Nemendalisti </p>
             <div>
-              Hér kemur StudentManagement.
+              Hér kemur StudentManagement seinna. 
             </div>
           </div>
         )}
