@@ -172,6 +172,7 @@ return (
         
       {adminTab === "students" && (
  <StudentManagement
+  currentUser={currentUser}
   studentList={studentList}
   setStudentList={setStudentList}
 
@@ -229,6 +230,7 @@ return (
     <TeacherDashboard currentUser={currentUser} />
 
        <StudentManagement
+       currentUser={currentUser}
        studentList={studentList}
   setStudentList={setStudentList}
 
