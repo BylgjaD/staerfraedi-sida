@@ -167,7 +167,7 @@ return (
             {currentUser.role === "admin" ? (
               <AdminDashboard />
             ) : (
-            <TeacherDashboard />
+            <TeacherDashboard currentUser={currentUser} />
             )}
         
       {adminTab === "students" && (
@@ -226,7 +226,7 @@ return (
     </>
   ): (
     <>
-    <TeacherDashboard />
+    <TeacherDashboard currentUser={currentUser} />
 
        <StudentManagement
        studentList={studentList}

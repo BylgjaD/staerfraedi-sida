@@ -1,5 +1,6 @@
 import { ArrowLeft, Lock, CheckCircle2 } from "lucide-react";
 import { Level } from "../../lib/types";
+import PageHeader from "./PageHeader";
 
 import {
   LEVEL_META,
@@ -44,15 +45,13 @@ function LevelView({
             style={{ background: `${meta.hex}15`, color: meta.hex }}>
             <span className="text-base font-bold">{level}</span> {meta.label}
           </div>
-          <h1 className="text-2xl font-bold mb-1" style={{ color: "#1e3a5f" }}>
-            {section.abbr}-{level} · {section.name}
-          </h1>
-          <p className="text-muted-foreground text-sm" style={{ fontFamily: "'Inter', sans-serif" }}>
-            {category.name}
-          </p>
+           <PageHeader
+           title={`${section.abbr}-${level} · ${section.name}`}
+            description={category.name}
+             />
         </div>
 
-        {/* Assignment placeholder */}
+        {/* Verkefni notanda */}
         <div className="bg-card border border-border rounded-xl overflow-hidden mb-6">
           <div className="px-5 py-4 border-b border-border flex items-center gap-3">
             <BookOpen size={18} style={{ color: category.accentColor }} />
@@ -69,7 +68,7 @@ function LevelView({
                 Leysðu öll verkefnin til að ljúka þessu stigi og opna næsta.
               </p>
             </div>
-            {/* Placeholder question boxes */}
+            {/* Spurningabox */}
             <div className="grid grid-cols-3 gap-2 mt-4 max-w-xs mx-auto">
               {[1, 2, 3, 4, 5, 6].map((n) => (
                 <div key={n} className="h-14 rounded-lg border border-border bg-muted/30 flex items-center justify-center text-xs text-muted-foreground">

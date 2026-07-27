@@ -6,6 +6,7 @@ import {
   ChartColumn,
 } from "lucide-react";
 import { useState } from "react";
+import PageHeader from "./PageHeader";
 import TeacherManagement from "./TeacherManagement";
 import StudentManagement from "./StudentManagement";
 
@@ -16,20 +17,16 @@ export default function AdminDashboard() {
     <div className="p-6">
       
       <div className="mb-8">
-  <h1 className="text-3xl font-bold text-slate-900">
-    👑 Stjórnborð stjórnanda
-  </h1>
-
-  <p className="text-muted-foreground mt-2">
-    Velkomin í stjórnborð DELTA. Hér geturðu stjórnað kennurum,
-    nemendum og fylgst með stöðu kerfisins.
-  </p>
+  <PageHeader
+  title="👑 Stjórnborð stjórnanda"
+  description="Hér er hægt að stjórna kennurum, nemendum og fylgstu með stöðu DELTA."
+/>
 </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Heildarfjöldi kennara" value={24} icon={<Users />} />
-        <StatCard title="Heildarfjöldi nemenda" value={342} icon={<GraduationCap />} />
-        <StatCard title="Tilkynningar" value={5} icon={<Bell />} />
-        <StatCard title="Virkni í kerfi (%)" value={98} icon={<ChartColumn />} />
+        <StatCard title="Heildarfjöldi kennara" value={24} icon={<Users />} color="blue" />
+        <StatCard title="Heildarfjöldi nemenda" value={342} icon={<GraduationCap />} color="green" />
+        <StatCard title="Tilkynningar" value={5} icon={<Bell />} color="orange" />
+        <StatCard title="Virkni í kerfi (%)" value={98} icon={<ChartColumn />} color="purple" />
       </div>
 
       <div className="flex border-b border-gray-200 dark:border-zinc-800 gap-4">
