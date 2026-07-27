@@ -1,14 +1,18 @@
 import { ReactNode } from "react";
 
 type StatCardProps = {
-    title: string
-    value: string | number
-    icon: ReactNode;
-}
+  title: string;
+  value: string | number;
+  icon: ReactNode;
+};
 
-export default function StatCard({ title, value, icon }: StatCardProps) {
-    return (
-         <div className="bg-card border rounded-xl p-6">
+export default function StatCard({
+  title,
+  value,
+  icon,
+}: StatCardProps) {
+  return (
+    <div className="bg-white rounded-2xl border shadow-sm hover:shadow-md transition-all duration-200 p-6">
       <div className="mb-4 text-blue-600">
         {icon}
       </div>
@@ -17,7 +21,7 @@ export default function StatCard({ title, value, icon }: StatCardProps) {
         {value}
       </div>
 
-      <p className="text-sm text-muted-foreground mt-1">
+      <p className="mt-1 text-sm text-muted-foreground">
         {title}
       </p>
     </div>
