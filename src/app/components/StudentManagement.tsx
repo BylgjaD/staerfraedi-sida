@@ -1,6 +1,7 @@
 import { Users } from "lucide-react";
 import { UserData } from "../../lib/types";
 import { CheckCircle2 } from "lucide-react";
+import { supabase } from "../../lib/supabase";
 
 
 interface StudentManagementProps {
@@ -160,29 +161,33 @@ export default function StudentManagement({
 
       cancelEdit();
           
-                   } else {
-                const newStudent = {
-                  email: newStudentEmail,
-                  password: editStudentPassword,
-                  name: newStudentName,
-                  role: "student",
-                  completed: [],
-                   teacher_email: currentUser.email,
-                };
+      } else {
+  const { data, error } = await supabase.functions.invoke("create-user", {
+    body: {
+      email: newStudentEmail,
+      password: editStudentPassword,
+      name: newStudentName,
+      role: "student",
+    },
+  });
 
-             const updatedStudentsList = [
-  ...studentList,
-  newStudent,
-];
+  if (error || data?.error) {
+    alert(data?.error || error?.message || "Villa við að búa til nemanda");
+  } else {
+    const newStudent = {
+      email: newStudentEmail,
+      name: newStudentName,
+      role: "student",
+      completed: [],
+      teacher_email: currentUser.email,
+    };
 
-setStudentList(updatedStudentsList);
-
-await saveStudentToSupabase(newStudent);
-
-setNewStudentName("");
-setNewStudentEmail(""); 
-setEditStudentPassword("");   
-}
+    setStudentList([...studentList, newStudent]);
+    setNewStudentName("");
+    setNewStudentEmail("");
+    setEditStudentPassword("");
+  }
+}           
 
               
               }}

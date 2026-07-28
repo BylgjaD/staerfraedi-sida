@@ -9,6 +9,7 @@ import {
   updateTeacherInSupabase,
   deleteTeacherFromSupabase,
   loadStudentsFromSupabase,
+  loadStudentsForTeacher,
   saveStudentToSupabase,
   updateStudentInSupabase,
   deleteStudentFromSupabase,
@@ -49,14 +50,10 @@ export default function TeacherView({
     const [editPassword, setEditPassword] = useState("");
       
     useEffect(() => {
-      loadStudentsFromSupabase().then((data) => {
-        console.log("Students from Supabase:", data);
-    
-        if (data && data.length > 0) {
-          setStudentList(data as UserData[]);
-        }
-      });
-    }, []);
+  loadStudentsForTeacher(currentUser.id).then((data) => {
+    setStudentList(data as UserData[]);
+  });
+}, [currentUser.id]);
     
       const isAdmin = currentUser.role === "admin";
       const [adminTab, setAdminTab] = useState<"students" | "teachers">("students");

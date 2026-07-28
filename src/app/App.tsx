@@ -25,6 +25,8 @@ import {
   getTeacherByEmail,
 } from "../lib/supabase";
 
+import { supabase } from "../lib/supabase";
+
 // ─── Constants ───────────────────────────────────────────────────────────────
 // ─── Prerequisite System ─────────────────────────────────────────────────────
 import {
@@ -72,40 +74,7 @@ const TEACHERS: {
   }
 ];
 function initUsers(): Record<string, UserData> {
-  const stored = loadUsers();
-  if (Object.keys(stored).length > 0) return stored;
-  const alg = "algebra";
-  const tal = "talnaskilningur";
-  const u1: LevelKey[] = [
-    ...CATEGORIES[0].sections.flatMap((s) => LEVELS.map((l) => lk(tal, s.id, l))),
-    lk("brot_og_prosentur", "almenn_brot", "δ"),
-    lk("brot_og_prosentur", "almenn_brot", "β"),
-    lk("brot_og_prosentur", "almenn_brot", "α"),
-    lk("brot_og_prosentur", "prosentur",   "δ"),
-    lk("brot_og_prosentur", "prosentur",   "β"),
-    lk(alg, "mynstur", "δ"),
-    lk(alg, "mynstur", "β"),
-    lk(alg, "mynstur", "α"),
-    lk(alg, "breytur", "δ"),
-    lk(alg, "veldi",   "δ"),
-  ];
-  const u2: LevelKey[] = [
-    ...CATEGORIES[0].sections.slice(0, 3).flatMap((s) => LEVELS.map((l) => lk(tal, s.id, l))),
-    lk(tal, "frumtolur", "δ"),
-    lk(alg, "mynstur", "δ"),
-    lk(alg, "mynstur", "β"),
-  ];
-  const u3: LevelKey[] = [
-    lk(tal, "hugareikningur", "δ"),
-    lk(tal, "hugareikningur", "β"),
-  ];
-  const users: Record<string, UserData> = {
-    "sigrun@nemandi.is": { email: "sigrun@nemandi.is", name: "Sigrun Björnsdóttir",  role: "student",  completed: u1, password: "delta123" },
-    "bjorn@nemandi.is":  { email: "bjorn@nemandi.is",  name: "Björn Sigurðsson",     role: "student",  completed: u2, password: "delta123" },
-    "helga@nemandi.is":  { email: "helga@nemandi.is",  name: "Helga Magnúsdóttir",   role: "student",  completed: u3, password: "delta123" },
-  };
-  saveUsers(users);
-  return users;
+  return {};
 }
 // ─── Login View ───────────────────────────────────────────────────────────────
 import LoginView from "./components/LoginView";
@@ -144,42 +113,42 @@ export default function App() {
   ? users[currentUser.email]?.completed || []
   : [];
  
-  const login = async (email: string, pass: string): Promise<string | null> => {
-  const teacherAccount = await getTeacherByEmail(email);
+const login = async (email: string, pass: string): Promise<string | null> => {
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password: pass,
+  });
 
-  if (teacherAccount) {
-    if (pass !== teacherAccount.password) {
-      return "Rangt lykilorð fyrir kennarareikning";
-    }
-
-    const teacher: UserData = {
-      email: teacherAccount.email,
-      name: teacherAccount.name,
-      role: teacherAccount.role,
-      completed: [],
-      password: teacherAccount.password,
-    };
-
-    setCurrentUser(teacher);
-    localStorage.setItem("delta_current_user", JSON.stringify(teacher));
-    setView("teacher");
-    return null;
+  if (error || !data.user) {
+    return "Rangt netfang eða lykilorð";
   }
 
-  const existing = await getStudentByEmail(email);
-  if (!existing) {
-    return "Nemandi fannst ekki";
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", data.user.id)
+    .single();
+
+  if (profileError || !profile) {
+    return "Fann ekki notandaprófíl";
   }
-  if (pass !== existing.password) {
-    return "Rangt lykilorð";
-  }
-  setCurrentUser(existing);
-  localStorage.setItem("delta_current_user", JSON.stringify(existing));
-  setView("dashboard");
+
+  const userData: UserData = {
+    id: data.user.id,
+    email: data.user.email!,
+    name: profile.name,
+    role: profile.role,
+    completed: [],
+    password: "",
+  };
+
+  setCurrentUser(userData);
+  localStorage.setItem("delta_current_user", JSON.stringify(userData));
+  setView(profile.role === "teacher" || profile.role === "admin" ? "teacher" : "dashboard");
   return null;
 };
 
-  const logout = () => {
+const logout = () => {
     setCurrentUser(null);
     localStorage.removeItem("delta_current_user");
     setView("login");
@@ -247,7 +216,7 @@ if (!currentUser) return null;
     <DashboardView
      users={users}
      setUsers={setUsers}
-     currentUser={currentUser}
+     currentUser={currentUser!}
      onSelectCategory={(id) => {
   setSelectedCategory(id);
   setView("category");

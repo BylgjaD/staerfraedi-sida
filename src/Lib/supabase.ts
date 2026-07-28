@@ -220,4 +220,17 @@ export async function loadStudentNotes(studentEmail: string, categoryId?: string
   }
   return data;
 }
+export async function loadStudentsForTeacher(teacherId: string) {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("role", "student")
+    .eq("teacher_id", teacherId);
 
+  if (error) {
+    console.error(error);
+    return [];
+  }
+
+  return data;
+}
