@@ -22,8 +22,9 @@ import {
   loadStudentsFromSupabase,
   saveStudentToSupabase,
   getStudentByEmail,
-
+  getTeacherByEmail,
 } from "../lib/supabase";
+
 // ─── Constants ───────────────────────────────────────────────────────────────
 // ─── Prerequisite System ─────────────────────────────────────────────────────
 import {
@@ -39,7 +40,6 @@ import DashboardView from "./components/DashboardView";
 import CategoryView from "./components/CategoryView";
 // ─── Storage / Auth ───────────────────────────────────────────────────────────
 import {
-  loadTeachers,
   loadUsers,
   saveUsers,
 } from "../lib/storage";
@@ -143,48 +143,42 @@ export default function App() {
  const completed = currentUser
   ? users[currentUser.email]?.completed || []
   : [];
- const login = async (email: string, pass: string): Promise<string | null> => {
+ 
+  const login = async (email: string, pass: string): Promise<string | null> => {
+  const teacherAccount = await getTeacherByEmail(email);
 
-  
-const teacherAccount = loadTeachers().find(
-  (t: (typeof TEACHERS)[number]) => t.email === email
-);
+  if (teacherAccount) {
+    if (pass !== teacherAccount.password) {
+      return "Rangt lykilorð fyrir kennarareikning";
+    }
 
-console.log("Teachers:", loadTeachers());
-console.log("Found:", teacherAccount);
+    const teacher: UserData = {
+      email: teacherAccount.email,
+      name: teacherAccount.name,
+      role: teacherAccount.role,
+      completed: [],
+      password: teacherAccount.password,
+    };
 
-if (teacherAccount) {
-  if (pass !== teacherAccount.password) {
-    return "Rangt lykilorð fyrir kennarareikning";
+    setCurrentUser(teacher);
+    localStorage.setItem("delta_current_user", JSON.stringify(teacher));
+    setView("teacher");
+    return null;
   }
 
-  const teacher: UserData = {
-  email: teacherAccount.email,
-  name: teacherAccount.name,
-  role: teacherAccount.role,
-  completed: [],
-  password: teacherAccount.password,
+  const existing = await getStudentByEmail(email);
+  if (!existing) {
+    return "Nemandi fannst ekki";
+  }
+  if (pass !== existing.password) {
+    return "Rangt lykilorð";
+  }
+  setCurrentUser(existing);
+  localStorage.setItem("delta_current_user", JSON.stringify(existing));
+  setView("dashboard");
+  return null;
 };
 
-  setCurrentUser(teacher);
-  localStorage.setItem("delta_current_user", JSON.stringify(teacher));
-  setView("teacher");
-  return null;
-}
-    // Student: create or load
-    const existing = await getStudentByEmail(email);
-if (!existing) {
-  return "Nemandi fannst ekki";
-}
-if (pass !== existing.password) {
-  return "Rangt lykilorð";
-}
-setCurrentUser(existing);
-localStorage.setItem("delta_current_user", JSON.stringify(existing));
-setView("dashboard");
-return null;
-
-  };
   const logout = () => {
     setCurrentUser(null);
     localStorage.removeItem("delta_current_user");

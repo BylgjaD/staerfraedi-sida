@@ -109,10 +109,115 @@ export async function getStudentByEmail(email: string) {
     .from("students")
     .select("*")
     .eq("email", email)
-    .single();
+    .maybeSingle();
 
   if (error) {
     return null;
   }
   return data;
 }
+export async function getTeacherByEmail(email: string) {
+  const { data, error } = await supabase
+    .from("teachers")
+    .select("*")
+    .eq("email", email)
+    .maybeSingle();
+
+  if (error) {
+    console.error("getTeacherByEmail villa:", error);
+    return null;
+  }
+  return data;
+}
+export async function loadNotesFromSupabase(teacherEmail: string) {
+  const { data, error } = await supabase
+    .from("notes")
+    .select("*")
+    .eq("teacher_email", teacherEmail)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error(error);
+    return [];
+  }
+
+  return data;
+}
+
+export async function saveNoteToSupabase(note: any) {
+  const { data, error } = await supabase
+    .from("notes")
+    .insert([note])
+    .select();
+
+  if (error) {
+    console.error("SUPABASE ERROR:", error);
+    alert(error.message);
+  }
+
+  return data;
+}
+
+export async function deleteNoteFromSupabase(id: string) {
+  const { error } = await supabase
+    .from("notes")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    console.error(error);
+  }
+}
+
+export async function uploadNoteImage(file: File) {
+  const fileExt = file.name.split(".").pop();
+  const fileName = `${crypto.randomUUID()}.${fileExt}`;
+
+  const { error } = await supabase.storage
+    .from("note-images")
+    .upload(fileName, file);
+
+  if (error) {
+    console.error("UPLOAD ERROR:", error);
+    return null;
+  }
+
+  const { data } = supabase.storage.from("note-images").getPublicUrl(fileName);
+  return data.publicUrl;
+}
+// Kennaraglósur fyrir ákveðinn kafla (student_email er null)
+export async function loadTeacherNotesForSection(categoryId: string, sectionId: string) {
+  const { data, error } = await supabase
+    .from("notes")
+    .select("*")
+    .eq("category_id", categoryId)
+    .eq("section_id", sectionId)
+    .is("student_email", null)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error(error);
+    return [];
+  }
+  return data;
+}
+
+// Nemandans eigin glósur, valfrjálst síaðar eftir kafla
+export async function loadStudentNotes(studentEmail: string, categoryId?: string, sectionId?: string) {
+  let query = supabase
+    .from("notes")
+    .select("*")
+    .eq("student_email", studentEmail);
+
+  if (categoryId) query = query.eq("category_id", categoryId);
+  if (sectionId) query = query.eq("section_id", sectionId);
+
+  const { data, error } = await query.order("created_at", { ascending: false });
+
+  if (error) {
+    console.error(error);
+    return [];
+  }
+  return data;
+}
+
