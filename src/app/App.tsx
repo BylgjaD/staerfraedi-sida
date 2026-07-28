@@ -221,6 +221,7 @@ export default function App() {
         isCompleted={completed.includes(lk(activeLevel.catId, activeLevel.secId, activeLevel.level))}
         onComplete={() => completeLevel(activeLevel.catId, activeLevel.secId, activeLevel.level)}
         onBack={() => setView("category")}
+        currentUser={currentUser!}
       />
     );
   }

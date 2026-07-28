@@ -162,104 +162,83 @@ return (
               >
                 Kennarar
               </button>
-
             </div>
-            {currentUser.role === "admin" ? (
-              <AdminDashboard />
-            ) : (
-            <TeacherDashboard currentUser={currentUser} />
+
+            {adminTab === "students" && (
+              <StudentManagement
+                currentUser={currentUser}
+                studentList={studentList}
+                setStudentList={setStudentList}
+                newStudentName={newStudentName}
+                setNewStudentName={setNewStudentName}
+                newStudentEmail={newStudentEmail}
+                setNewStudentEmail={setNewStudentEmail}
+                editingStudent={editingStudent}
+                setEditingStudent={setEditingStudent}
+                editStudentName={editStudentName}
+                setEditStudentName={setEditStudentName}
+                editStudentEmail={editStudentEmail}
+                setEditStudentEmail={setEditStudentEmail}
+                saveStudentToSupabase={saveStudentToSupabase}
+                updateStudentInSupabase={updateStudentInSupabase}
+                deleteStudent={deleteStudent}
+                editStudentPassword={editStudentPassword}
+                setEditStudentPassword={setEditStudentPassword}
+              />
             )}
-        
-      {adminTab === "students" && (
- <StudentManagement
-  currentUser={currentUser}
-  studentList={studentList}
-  setStudentList={setStudentList}
 
-  newStudentName={newStudentName}
-  setNewStudentName={setNewStudentName}
-
-  newStudentEmail={newStudentEmail}
-  setNewStudentEmail={setNewStudentEmail}
-
-  editingStudent={editingStudent}
-  setEditingStudent={setEditingStudent}
-
-  editStudentName={editStudentName}
-  setEditStudentName={setEditStudentName}
-
-  editStudentEmail={editStudentEmail}
-  setEditStudentEmail={setEditStudentEmail}
-
-  saveStudentToSupabase={saveStudentToSupabase}
-  updateStudentInSupabase={updateStudentInSupabase}
-  deleteStudent={deleteStudent}
-  editStudentPassword={editStudentPassword}
-  setEditStudentPassword={setEditStudentPassword}
-  
-/>
-)}
-          
-           {adminTab === "teachers" && (
-  <TeacherManagement
-    teacherList={teacherList}
-    newTeacherName={newTeacherName}
-    setNewTeacherName={setNewTeacherName}
-    newTeacherEmail={newTeacherEmail}
-    setNewTeacherEmail={setNewTeacherEmail}
-    newTeacherPassword={newTeacherPassword}
-    setNewTeacherPassword={setNewTeacherPassword}
-    saveTeachers={saveTeachers}
-    saveTeacherToSupabase={saveTeacherToSupabase}
-    setTeacherList={setTeacherList}
-    setEditingTeacher={setEditingTeacher}
-    setEditName={setEditName}
-    setEditEmail={setEditEmail}
-    setEditPassword={setEditPassword}
-    editName={editName}
-    editEmail={editEmail}
-    editPassword={editPassword}
-    editingTeacher={editingTeacher}
-    updateTeacherInSupabase={updateTeacherInSupabase}
-    />
-      )}
-
-    </>
-  ): (
-    <>
-    <TeacherDashboard currentUser={currentUser} />
-
-       <StudentManagement
-       currentUser={currentUser}
-       studentList={studentList}
-  setStudentList={setStudentList}
-
-  newStudentName={newStudentName}
-  setNewStudentName={setNewStudentName}
-
-  newStudentEmail={newStudentEmail}
-  setNewStudentEmail={setNewStudentEmail}
-
-  editingStudent={editingStudent}
-  setEditingStudent={setEditingStudent}
-
-  editStudentName={editStudentName}
-  setEditStudentName={setEditStudentName}
-
-  editStudentEmail={editStudentEmail}
-  setEditStudentEmail={setEditStudentEmail}
-
-  saveStudentToSupabase={saveStudentToSupabase}
-  updateStudentInSupabase={updateStudentInSupabase}
-  deleteStudent={deleteStudent}
-  editStudentPassword={editStudentPassword}
-  setEditStudentPassword={setEditStudentPassword}
-  
-      />
-    </>
-  )}
-
-</main>
-</div>
-);
-}  
+            {adminTab === "teachers" && (
+              <TeacherManagement
+                teacherList={teacherList}
+                newTeacherName={newTeacherName}
+                setNewTeacherName={setNewTeacherName}
+                newTeacherEmail={newTeacherEmail}
+                setNewTeacherEmail={setNewTeacherEmail}
+                newTeacherPassword={newTeacherPassword}
+                setNewTeacherPassword={setNewTeacherPassword}
+                saveTeachers={saveTeachers}
+                saveTeacherToSupabase={saveTeacherToSupabase}
+                setTeacherList={setTeacherList}
+                setEditingTeacher={setEditingTeacher}
+                setEditName={setEditName}
+                setEditEmail={setEditEmail}
+                setEditPassword={setEditPassword}
+                editName={editName}
+                editEmail={editEmail}
+                editPassword={editPassword}
+                editingTeacher={editingTeacher}
+                updateTeacherInSupabase={updateTeacherInSupabase}
+              />
+            )}
+          </>
+        ) : (
+          <TeacherDashboard
+            currentUser={currentUser}
+            studentsContent={
+              <StudentManagement
+                currentUser={currentUser}
+                studentList={studentList}
+                setStudentList={setStudentList}
+                newStudentName={newStudentName}
+                setNewStudentName={setNewStudentName}
+                newStudentEmail={newStudentEmail}
+                setNewStudentEmail={setNewStudentEmail}
+                editingStudent={editingStudent}
+                setEditingStudent={setEditingStudent}
+                editStudentName={editStudentName}
+                setEditStudentName={setEditStudentName}
+                editStudentEmail={editStudentEmail}
+                setEditStudentEmail={setEditStudentEmail}
+                saveStudentToSupabase={saveStudentToSupabase}
+                updateStudentInSupabase={updateStudentInSupabase}
+                deleteStudent={deleteStudent}
+                editStudentPassword={editStudentPassword}
+                setEditStudentPassword={setEditStudentPassword}
+              />
+            }
+          />
+        )}
+      </main>
+    </div>
+  );
+}

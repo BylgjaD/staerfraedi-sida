@@ -13,7 +13,8 @@ import {
 
 interface TeacherDashboardProps {
     currentUser: UserData;
-  }
+     studentsContent?: React.ReactNode;
+}
   interface NoteData {
   id: string;
   teacher_email: string;
@@ -26,14 +27,15 @@ interface TeacherDashboardProps {
   created_at: string;
 }
 
-export default function TeacherDashboard( {currentUser}: TeacherDashboardProps) {
- const [activeTab, setActiveTab] = useState("overview");
+export default function TeacherDashboard( {currentUser, studentsContent}: TeacherDashboardProps) {
+  
+  const [activeTab, setActiveTab] = useState("overview");
   const [notes, setNotes] = useState<NoteData[]>([]);
   const [newNoteText, setNewNoteText] = useState("");
   const [newImageFile, setNewImageFile] = useState<File | null>(null);
   const [newImagePreview, setNewImagePreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-   const [selectedCategoryId, setSelectedCategoryId] = useState(CATEGORIES[0].id);
+  const [selectedCategoryId, setSelectedCategoryId] = useState(CATEGORIES[0].id);
   const [selectedSectionId, setSelectedSectionId] = useState(CATEGORIES[0].sections[0].id);
   const [selectedLevel, setSelectedLevel] = useState<string>("");
 
@@ -231,11 +233,10 @@ export default function TeacherDashboard( {currentUser}: TeacherDashboardProps) 
       )}
 
       {activeTab === "students" && (
-        <div className="bg-white p-6 rounded-2xl border shadow-sm">
-          <h3 className="text-lg font-bold mb-2">Nemendur</h3>
-          <p className="text-muted-foreground text-sm">Hérna koma þínir nemendur.</p>
-        </div>
-      )}
+        <div>
+      {studentsContent}
+    </div>
+  )}
     </div>
   );
 }
