@@ -152,7 +152,8 @@ const login = async (email: string, pass: string): Promise<string | null> => {
   return null;
 };
 
-const logout = () => {
+const logout = async() => {
+   await supabase.auth.signOut();
     setCurrentUser(null);
     localStorage.removeItem("delta_current_user");
     setView("login");
