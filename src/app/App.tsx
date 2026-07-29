@@ -132,6 +132,10 @@ const login = async (email: string, pass: string): Promise<string | null> => {
   if (profileError || !profile) {
     return "Fann ekki notandaprófíl";
   }
+  if (!profile.active) {
+  await supabase.auth.signOut(); // ógilda session-ið sem signInWithPassword bjó til
+  return "Þessi notandi er óvirkur. Hafðu samband við stjórnanda.";
+}
 
   const userData: UserData = {
     id: data.user.id,

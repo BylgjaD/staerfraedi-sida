@@ -1,18 +1,16 @@
 import { UserData } from "../../lib/types";
 import { useEffect, useState } from "react";
-import {
-  loadTeachers,
-  saveTeachers,
-} from "../../lib/storage";
+
 import {
   saveTeacherToSupabase,
   updateTeacherInSupabase,
   deleteTeacherFromSupabase,
-  loadStudentsFromSupabase,
   loadStudentsForTeacher,
   saveStudentToSupabase,
   updateStudentInSupabase,
   deleteStudentFromSupabase,
+  loadTeachersFromProfiles, 
+  setTeacherActive,
 } from "../../lib/supabase";
 
 import TeacherDashboard from "./TeacherDashboard";
@@ -20,7 +18,7 @@ import AdminDashboard from "./AdminDashboard";
 import { LogOut, GraduationCap } from "lucide-react";
 import StudentManagement from "./StudentManagement";
 import TeacherManagement from "./TeacherManagement";
-import { TEACHERS, Teacher } from "../../data/teachers";
+
 
 interface TeacherViewProps {
   users: Record<string, UserData>;
@@ -36,10 +34,13 @@ export default function TeacherView({
 }: TeacherViewProps) {
     const [selected, setSelected] = useState<string | null>(null); 
     const [previewCategory, setPreviewCategory] = useState<string | null>(null); 
-    const [teacherList, setTeacherList] = useState<typeof TEACHERS>( loadTeachers() );
+    const [teacherList, setTeacherList] = useState<any[]>([]);
+    useEffect(() => {
+      loadTeachersFromProfiles().then(setTeacherList);
+    }, []);
     const [studentList, setStudentList] = useState<UserData[]>([]);
     const [editingTeacher, setEditingTeacher] =
-       useState<Teacher | null>(null);
+       useState<UserData | null>(null);
     const [editingStudent, setEditingStudent] =
        useState<UserData | null>(null);
     
@@ -76,22 +77,17 @@ export default function TeacherView({
     prev.filter((s) => s.email !== email)
   );
 };
-  const deleteTeacher = async (email: string) => {
+  const deleteTeacher = async (id: string) => {
   if (!window.confirm("Ertu viss um að þú viljir eyða þessum kennara?")) {
     return;
-  }    
-  const updatedTeachers = loadTeachers().filter(
-    (t: (typeof TEACHERS)[number]) => t.email !== email
-  );
+  }   
+   const updatedTeachers = teacherList.filter((t) => t.id !== id);
 
-  saveTeachers(updatedTeachers);
-  await deleteTeacherFromSupabase(email);
 
   setTeacherList(updatedTeachers);
 
-  setNewTeacherName("");
-  setNewTeacherEmail("");
-  setNewTeacherPassword("");
+  
+  setTeacherList((prev) => prev.filter((t) => t.id !== id));
 };
 return (
   <div className="min-h-screen bg-background" style={{ fontFamily: 
@@ -193,7 +189,6 @@ return (
                 setNewTeacherEmail={setNewTeacherEmail}
                 newTeacherPassword={newTeacherPassword}
                 setNewTeacherPassword={setNewTeacherPassword}
-                saveTeachers={saveTeachers}
                 saveTeacherToSupabase={saveTeacherToSupabase}
                 setTeacherList={setTeacherList}
                 setEditingTeacher={setEditingTeacher}
@@ -205,6 +200,8 @@ return (
                 editPassword={editPassword}
                 editingTeacher={editingTeacher}
                 updateTeacherInSupabase={updateTeacherInSupabase}
+                setTeacherActive={setTeacherActive}
+                deleteTeacher={deleteTeacher}
               />
             )}
           </>

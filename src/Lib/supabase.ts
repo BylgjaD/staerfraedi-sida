@@ -31,11 +31,11 @@ export async function saveTeacherToSupabase(teacher: any) {
   }
 }
 
-export async function deleteTeacherFromSupabase(email: string) {
+export async function deleteTeacherFromSupabase(id: string) {
   const { error } = await supabase
-    .from("teachers")
+    .from("profiles")
     .delete()
-    .eq("email", email);
+    .eq("id", id);
 
   if (error) {
     console.error(error);
@@ -226,6 +226,29 @@ export async function loadStudentsForTeacher(teacherId: string) {
     .select("*")
     .eq("role", "student")
     .eq("teacher_id", teacherId);
+
+  if (error) {
+    console.error(error);
+    return [];
+  }
+
+  return data;
+}
+export async function setTeacherActive(teacherId: string, active: boolean) {
+  const { error } = await supabase
+    .from("profiles")
+    .update({ active })
+    .eq("id", teacherId);
+
+  if (error) {
+    console.error(error);
+  }
+}
+export async function loadTeachersFromProfiles() {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("role", "teacher");
 
   if (error) {
     console.error(error);

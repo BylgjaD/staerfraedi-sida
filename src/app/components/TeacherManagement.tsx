@@ -1,3 +1,7 @@
+import { useState } from "react";
+import { supabase } from "../../lib/supabase";
+import { setTeacherActive } from "../../lib/supabase";
+
 interface TeacherManagementProps {
   teacherList: any[];
   newTeacherName: string;
@@ -6,7 +10,6 @@ interface TeacherManagementProps {
   setNewTeacherPassword: React.Dispatch<React.SetStateAction<string>>;
   newTeacherEmail: string;
   setNewTeacherEmail: React.Dispatch<React.SetStateAction<string>>;
-  saveTeachers: (teacher: any[]) => void;
   saveTeacherToSupabase: (teacher: any) => Promise<any>;
   setTeacherList: React.Dispatch<React.SetStateAction<any[]>>;
   setEditingTeacher: React.Dispatch<React.SetStateAction<any | null>>;
@@ -18,6 +21,8 @@ interface TeacherManagementProps {
   editPassword: string;
   editingTeacher: any | null;
   updateTeacherInSupabase: (oldEmail: string, teacher: any) => Promise<void>;
+  setTeacherActive: (teacherId: string, active: boolean) => Promise<void>;
+  deleteTeacher: (id: string) => Promise<void>;
 }
 export default function TeacherManagement({
   teacherList,
@@ -27,8 +32,6 @@ export default function TeacherManagement({
   setNewTeacherEmail,
   newTeacherPassword,
   setNewTeacherPassword,
-  saveTeachers,
-  saveTeacherToSupabase,
   setTeacherList,
   setEditingTeacher,
   setEditName,
@@ -39,7 +42,9 @@ export default function TeacherManagement({
   editPassword,
   editingTeacher,
   updateTeacherInSupabase,
+  deleteTeacher,
 }: TeacherManagementProps) {
+  const [saving, setSaving] = useState(false);
   return (
   <div className="bg-card rounded-lg border p-4 mt-4">
 
@@ -71,58 +76,40 @@ export default function TeacherManagement({
     className="border rounded px-3 py-2 w-full"
   />
   <button
+  disabled={saving}
+  className="px-4 py-2 rounded border disabled:opacity-50"
+  onClick={async () => {
+    setSaving(true);
 
-    className="px-4 py-2 rounded border"
+    const { data, error } = await supabase.functions.invoke("create-user", {
+      body: {
+        email: newTeacherEmail,
+        password: newTeacherPassword,
+        name: newTeacherName,
+        role: "teacher",
+      },
+    });
 
-    onClick={async () => {
+    if (error || data?.error) {
+      alert(data?.error || error?.message || "Villa við að búa til kennara");
+    } else {
+      const newTeacher = {
+        email: newTeacherEmail,
+        name: newTeacherName,
+        role: "teacher" as const,
+      };
 
-  const newTeacher = {
+      setTeacherList([...teacherList, newTeacher]);
+      setNewTeacherName("");
+      setNewTeacherEmail("");
+      setNewTeacherPassword("");
+    }
 
-    email: newTeacherEmail,
-
-    password: newTeacherPassword,
-
-    name: newTeacherName,
-
-    role: "teacher" as const,
-
-  };
-
-
-
-  const updatedTeachers = [
-
-    ...teacherList,
-
-    newTeacher,
-
-  ];
-
-
-
-  saveTeachers(updatedTeachers);
-
-
-
-  await saveTeacherToSupabase(newTeacher);
-
-
-
-  setNewTeacherName("");
-
-  setNewTeacherEmail("");
-
-  setNewTeacherPassword("");
-
-  setTeacherList(updatedTeachers);
-
-}}
-
-  >
-
-    ➕ Bæta við kennara
-
-  </button>
+    setSaving(false);
+  }}
+>
+  {saving ? "Vistar..." : "➕ Bæta við kennara"}
+</button>
     </div>
  {teacherList.map((teacher: any) => (
                   <div
@@ -135,6 +122,41 @@ export default function TeacherManagement({
                        {teacher.email}
                       </div>
                      </div>
+                  <div className="flex gap-2">
+  <button
+    onClick={() => {
+      setEditingTeacher(teacher);
+      setEditName(teacher.name);
+      setEditEmail(teacher.email);
+      setEditPassword(teacher.password);
+    }}
+    className="px-3 py-1 rounded border"
+  >
+    Breyta
+  </button>
+
+  <button
+    onClick={async () => {
+      const newActiveState = !teacher.active;
+      await setTeacherActive(teacher.id, newActiveState);
+      setTeacherList(
+        teacherList.map((t) =>
+          t.id === teacher.id ? { ...t, active: newActiveState } : t
+        )
+      );
+    }}
+    className="px-3 py-1 rounded border"
+  >
+    {teacher.active ? "Gera óvirkan" : "Gera virkan"}
+  </button>
+
+  <button
+  onClick={() => deleteTeacher(teacher.id)}
+  className="px-3 py-1 rounded border text-red-600"
+>
+  Eyða
+</button>
+</div>
                     
 
 <div className="flex gap-2">
@@ -195,7 +217,7 @@ export default function TeacherManagement({
         : teacher
   );
 
-  saveTeachers(updatedTeachers);
+  setTeacherList(updatedTeachers);
 
    await updateTeacherInSupabase(
       editingTeacher.email, updatedTeacher
