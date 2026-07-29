@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Users } from "lucide-react";
 import { UserData } from "../../lib/types";
 import { CheckCircle2 } from "lucide-react";
@@ -46,6 +47,7 @@ export default function StudentManagement({
   currentUser,
 
 }: StudentManagementProps) {
+  const [saving, setSaving] = useState(false); 
   const cancelEdit = () => {
     if (editingStudent) {
       setEditingStudent(null);
@@ -144,14 +146,17 @@ export default function StudentManagement({
           />
 
           <div className="flex gap-2">
-            <button
-              className="px-4 py-2 rounded border"
-              onClick={async () => {
-                 if (editingStudent) {
-                   const updatedStudent = {
-        ...editingStudent,
-        name: editStudentName,
-        email: editStudentEmail,
+           <button
+           disabled={saving}
+           className="px-4 py-2 rounded border disabled:opacity-50"
+           onClick={async () => {
+             setSaving(true);
+                
+             if (editingStudent) {
+               const updatedStudent = {
+                ...editingStudent,
+                 name: editStudentName,
+                 email: editStudentEmail,
           };
           const updatedStudentsList = studentList.map((s) =>
         s.email === editingStudent.email ? updatedStudent : s
@@ -187,12 +192,15 @@ export default function StudentManagement({
     setNewStudentEmail("");
     setEditStudentPassword("");
   }
-}           
+}  
+  setSaving(false);         
 
               
               }}
             >
-              {editingStudent
+               {saving
+    ? "Vistar..."
+              :editingStudent
   ? "💾 Vista breytingar"
   : "➕ Bæta við nemanda"}
             </button>
