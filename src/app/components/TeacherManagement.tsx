@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { supabase } from "../../lib/supabase";
-import { setTeacherActive } from "../../lib/supabase";
+import { setUserActive } from "../../lib/supabase";
 
 interface TeacherManagementProps {
   teacherList: any[];
@@ -21,7 +21,7 @@ interface TeacherManagementProps {
   editPassword: string;
   editingTeacher: any | null;
   updateTeacherInSupabase: (oldEmail: string, teacher: any) => Promise<void>;
-  setTeacherActive: (teacherId: string, active: boolean) => Promise<void>;
+  setUserActive: (teacherId: string, active: boolean) => Promise<void>;
   deleteTeacher: (id: string) => Promise<void>;
 }
 export default function TeacherManagement({
@@ -138,7 +138,7 @@ export default function TeacherManagement({
   <button
     onClick={async () => {
       const newActiveState = !teacher.active;
-      await setTeacherActive(teacher.id, newActiveState);
+      await setUserActive(teacher.id, newActiveState);
       setTeacherList(
         teacherList.map((t) =>
           t.id === teacher.id ? { ...t, active: newActiveState } : t

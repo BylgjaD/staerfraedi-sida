@@ -233,11 +233,12 @@ export async function loadStudentsForTeacher(teacherId: string) {
   }
   
   return data;}
-export async function setTeacherActive(teacherId: string, active: boolean) {
+
+  export async function setUserActive(userId: string, active: boolean) {
   const { error } = await supabase
     .from("profiles")
     .update({ active })
-    .eq("id", teacherId);
+    .eq("id", userId);
 
   if (error) {
     console.error(error);

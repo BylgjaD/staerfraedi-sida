@@ -3,6 +3,7 @@ import { Users } from "lucide-react";
 import { UserData } from "../../lib/types";
 import { CheckCircle2 } from "lucide-react";
 import { supabase } from "../../lib/supabase";
+import { setUserActive } from "../../lib/supabase";
 
 
 interface StudentManagementProps {
@@ -84,107 +85,127 @@ setSelectedStudent,
         </h1>
       </div>
 
-     {studentList.map((student) => (
-  <div key={student.email} className="bg-card border rounded-lg p-4 mb-4">
-    <div className="flex justify-between items-center">
-      <div>
-        <div className="font-semibold">{student.name}</div>
-        <div className="text-sm">{student.email}</div>
+    {studentList.map((student) => {
+  const assignedTeacher = teacherList.find((t) => t.id === student.teacher_id);
+
+  return (
+    <div key={student.email} className="bg-card border rounded-xl p-4 mb-4">
+      <div className="flex items-start justify-between mb-1">
+        <div className="font-semibold text-base">{student.name}</div>
+        <span
+          className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+            student.active === false
+              ? "bg-gray-100 text-gray-500"
+              : "bg-emerald-100 text-emerald-700"
+          }`}
+        >
+          {student.active === false ? "Óvirkur" : "Virkur"}
+        </span>
       </div>
-      
-      <div className="flex items-center gap-2">
+
+      <div className="text-sm text-muted-foreground mb-1">{student.email}</div>
+
+      {assignedTeacher && (
+        <div className="text-sm text-muted-foreground mb-3">
+          Kennari: {assignedTeacher.name}
+        </div>
+      )}
+
+      <div className="flex flex-wrap items-center gap-2 pt-3 border-t mt-3">
         <button
           onClick={() => {
             setEditingStudent(student);
             setEditStudentName(student.name);
             setEditStudentEmail(student.email);
           }}
-          
-          className="px-3 py-1 rounded border h-fit"
+          className="px-3 py-1.5 rounded-lg border text-sm hover:bg-gray-50"
         >
           Breyta
         </button>
+
         <button
-  onClick={() => {
-    setAssigningStudent(student);
-    setSelectedTeacherId(student.teacher_id || "");
-  }}
-  className="px-3 py-1 rounded border"
->
-  Tengja við kennara
-</button>
+          onClick={() => {
+            setAssigningStudent(student);
+            setSelectedTeacherId(student.teacher_id || "");
+          }}
+          className="px-3 py-1.5 rounded-lg border text-sm hover:bg-gray-50"
+        >
+          Tengja við kennara
+        </button>
 
-{assigningStudent?.id === student.id && (
-  <div className="mt-3 border-t pt-3">
-    <select
-      value={selectedTeacherId}
-      onChange={(e) => setSelectedTeacherId(e.target.value)}
-      className="border rounded px-2 py-1"
-    >
-      <option value="">Veldu kennara</option>
-
-      {teacherList.map((teacher) => (
-        <option key={teacher.id} value={teacher.id}>
-          {teacher.name}
-        </option>
-      ))}
-    </select>
-
-   <button
-   
+        <button
   onClick={async () => {
-  if (!assigningStudent || !selectedTeacherId) return; 
-  
-  await assignStudentToTeacher(
-    assigningStudent.id,
-    selectedTeacherId
-  );
-
-  setStudentList((prev) =>
-    prev.map((student) =>
-      student.id === assigningStudent.id
-        ? { ...student, teacher_id: selectedTeacherId }
-        : student
-    )
-  );
-
-  setAssigningStudent(null);
-}}
-  
+    const newActiveState = student.active === false ? true : false;
+    await setUserActive(student.id, newActiveState);
+    setStudentList((prev) =>
+      prev.map((s) => (s.id === student.id ? { ...s, active: newActiveState } : s))
+    );
+  }}
+  className="px-3 py-1.5 rounded-lg border text-sm hover:bg-gray-50"
 >
-  Vista
+  {student.active === false ? "Gera virkan" : "Gera óvirkan"}
 </button>
 
-    <button
-      onClick={() => setAssigningStudent(null)}
-      className="ml-2 px-3 py-1 rounded border"
-    >
-      Hætta við
-    </button>
-  </div>
-)}
+        <button
+          onClick={() => setSelectedStudent(student)}
+          className="px-3 py-1.5 rounded-lg border text-sm text-blue-600 hover:bg-blue-50"
+        >
+          📊 Skoða framvindu
+        </button>
 
-<button
-  onClick={() => deleteStudent(student.email)}
-  className="px-3 py-1 rounded border text-red-600"
->
-  Eyða
-</button>
-             
-        <div className="text-sm text-muted-foreground">
-          <button
-  className="text-sm text-blue-600 hover:underline"
-
-  onClick={() => setSelectedStudent(student)}
->
-    📊 Skoða framvindu →
-</button>
-</div>
-
+        <button
+          onClick={() => deleteStudent(student.email)}
+          className="ml-auto px-3 py-1.5 rounded-lg border text-sm text-red-600 hover:bg-red-50"
+        >
+          Eyða
+        </button>
       </div>
+
+      {assigningStudent?.id === student.id && (
+        <div className="mt-3 pt-3 border-t flex items-center gap-2">
+          <select
+            value={selectedTeacherId}
+            onChange={(e) => setSelectedTeacherId(e.target.value)}
+            className="border rounded-lg px-2 py-1.5 text-sm"
+          >
+            <option value="">Veldu kennara</option>
+            {teacherList.map((teacher) => (
+              <option key={teacher.id} value={teacher.id}>
+                {teacher.name}
+              </option>
+            ))}
+          </select>
+
+          <button
+            onClick={async () => {
+              if (!assigningStudent || !selectedTeacherId) return;
+
+              await assignStudentToTeacher(assigningStudent.id, selectedTeacherId);
+
+              setStudentList((prev) =>
+                prev.map((s) =>
+                  s.id === assigningStudent.id ? { ...s, teacher_id: selectedTeacherId } : s
+                )
+              );
+
+              setAssigningStudent(null);
+            }}
+            className="px-3 py-1.5 rounded-lg border text-sm bg-blue-600 text-white"
+          >
+            Vista
+          </button>
+
+          <button
+            onClick={() => setAssigningStudent(null)}
+            className="px-3 py-1.5 rounded-lg border text-sm"
+          >
+            Hætta við
+          </button>
+        </div>
+      )}
     </div>
-  </div>
-))}
+  );
+})}
  
       <div className="bg-card border rounded-lg p-4 mb-6">
         <h3 className="font-bold mb-4">

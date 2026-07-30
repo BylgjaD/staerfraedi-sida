@@ -10,7 +10,7 @@ import {
   updateStudentInSupabase,
   deleteStudentFromSupabase,
   loadTeachersFromProfiles, 
-  setTeacherActive,
+  setUserActive,
   loadAllStudents,
   assignStudentToTeacher,
 } from "../../lib/supabase";
@@ -224,7 +224,7 @@ return (
                 editPassword={editPassword}
                 editingTeacher={editingTeacher}
                 updateTeacherInSupabase={updateTeacherInSupabase}
-                setTeacherActive={setTeacherActive}
+                setUserActive={setUserActive}
                 deleteTeacher={deleteTeacher}
               />
             )}
