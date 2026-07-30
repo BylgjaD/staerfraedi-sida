@@ -69,7 +69,7 @@ export default function TeacherView({
 }, [currentUser]);
     
       const isAdmin = currentUser.role === "admin";
-      const [adminTab, setAdminTab] = useState<"students" | "teachers">("students");
+      const [adminTab, setAdminTab] = useState<"overview" | "students" | "teachers">("overview");
       const [newTeacherName, setNewTeacherName] = useState("");
      
     const [newTeacherEmail, setNewTeacherEmail] = useState("");
@@ -101,6 +101,13 @@ export default function TeacherView({
   
   setTeacherList((prev) => prev.filter((t) => t.id !== id));
 };
+
+const activeTeachers = teacherList.filter((t) => t.active !== false).length;
+const inactiveTeachers = teacherList.length - activeTeachers;
+const activeStudents = studentList.filter((s) => s.active !== false).length;
+const inactiveStudents = studentList.length - activeStudents;
+const unassignedStudents = studentList.filter((s) => !s.teacher_id).length;
+
 return (
   <div className="min-h-screen bg-background" style={{ fontFamily: 
     "'Outfit', sans-serif" }}>
@@ -150,128 +157,159 @@ return (
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 py-8">
-        {isAdmin ? (
-          <>
-            <div className="mb-6 flex gap-2">
-              <button
-                onClick={() => setAdminTab("students")}
-                className="px-3 py-2 rounded border"
-              >
-                Nemendur
-              </button>
-              <button
-                onClick={() => setAdminTab("teachers")}
-                className="px-3 py-2 rounded border"
-              >
-                Kennarar
-              </button>
+     <main className="max-w-5xl mx-auto px-4 py-8">
+  {isAdmin ? (
+    <>
+      <div className="mb-6 flex gap-2">
+        <button
+          onClick={() => setAdminTab("overview")}
+          className="px-3 py-2 rounded border"
+        >
+          Yfirlit
+        </button>
+        <button
+          onClick={() => setAdminTab("students")}
+          className="px-3 py-2 rounded border"
+        >
+          Nemendur
+        </button>
+        <button
+          onClick={() => setAdminTab("teachers")}
+          className="px-3 py-2 rounded border"
+        >
+          Kennarar
+        </button>
+      </div>
+
+      {adminTab === "overview" && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="bg-card border rounded-xl p-5">
+            <div className="text-sm text-muted-foreground mb-1">Kennarar</div>
+            <div className="text-2xl font-bold" style={{ color: "#1e3a5f" }}>
+              {teacherList.length}
             </div>
-            
+            <div className="text-xs text-muted-foreground mt-1">
+              {activeTeachers} virkir · {inactiveTeachers} óvirkir
+            </div>
+          </div>
 
-           {adminTab === "students" && (
-  <StudentManagement
-    currentUser={currentUser}
-    studentList={studentList}
-    setStudentList={setStudentList}
+          <div className="bg-card border rounded-xl p-5">
+            <div className="text-sm text-muted-foreground mb-1">Nemendur</div>
+            <div className="text-2xl font-bold" style={{ color: "#1e3a5f" }}>
+              {studentList.length}
+            </div>
+            <div className="text-xs text-muted-foreground mt-1">
+              {activeStudents} virkir · {inactiveStudents} óvirkir
+            </div>
+          </div>
 
-    teacherList={teacherList}
+          <div className="bg-card border rounded-xl p-5">
+            <div className="text-sm text-muted-foreground mb-1">Ekki tengdir kennara</div>
+            <div
+              className="text-2xl font-bold"
+              style={{ color: unassignedStudents > 0 ? "#d97706" : "#1e3a5f" }}
+            >
+              {unassignedStudents}
+            </div>
+            <div className="text-xs text-muted-foreground mt-1">
+              {unassignedStudents > 0 ? "Þarf að úthluta" : "Allir tengdir"}
+            </div>
+          </div>
+        </div>
+      )}
 
-    assigningStudent={assigningStudent}
-    setAssigningStudent={setAssigningStudent}
+      {adminTab === "students" && (
+        <StudentManagement
+          currentUser={currentUser}
+          studentList={studentList}
+          setStudentList={setStudentList}
+          teacherList={teacherList}
+          assigningStudent={assigningStudent}
+          setAssigningStudent={setAssigningStudent}
+          selectedTeacherId={selectedTeacherId}
+          setSelectedTeacherId={setSelectedTeacherId}
+          newStudentName={newStudentName}
+          setNewStudentName={setNewStudentName}
+          newStudentEmail={newStudentEmail}
+          setNewStudentEmail={setNewStudentEmail}
+          editingStudent={editingStudent}
+          setEditingStudent={setEditingStudent}
+          editStudentName={editStudentName}
+          setEditStudentName={setEditStudentName}
+          editStudentEmail={editStudentEmail}
+          setEditStudentEmail={setEditStudentEmail}
+          saveStudentToSupabase={saveStudentToSupabase}
+          updateStudentInSupabase={updateStudentInSupabase}
+          deleteStudent={deleteStudent}
+          editStudentPassword={editStudentPassword}
+          setEditStudentPassword={setEditStudentPassword}
+          assignStudentToTeacher={assignStudentToTeacher}
+          selectedStudent={selectedStudent}
+          setSelectedStudent={setSelectedStudent}
+        />
+      )}
 
-    selectedTeacherId={selectedTeacherId}
-    setSelectedTeacherId={setSelectedTeacherId}
-
-    newStudentName={newStudentName}
-    setNewStudentName={setNewStudentName}
-    newStudentEmail={newStudentEmail}
-    setNewStudentEmail={setNewStudentEmail}
-    editingStudent={editingStudent}
-    setEditingStudent={setEditingStudent}
-    editStudentName={editStudentName}
-    setEditStudentName={setEditStudentName}
-    editStudentEmail={editStudentEmail}
-    setEditStudentEmail={setEditStudentEmail}
-    saveStudentToSupabase={saveStudentToSupabase}
-    updateStudentInSupabase={updateStudentInSupabase}
-    deleteStudent={deleteStudent}
-    editStudentPassword={editStudentPassword}
-    setEditStudentPassword={setEditStudentPassword}
-    assignStudentToTeacher={assignStudentToTeacher}
-    selectedStudent={selectedStudent}
-    setSelectedStudent={setSelectedStudent}
-  />
-)}
-
-            {adminTab === "teachers" && (
-              <TeacherManagement
-                teacherList={teacherList}
-                newTeacherName={newTeacherName}
-                setNewTeacherName={setNewTeacherName}
-                newTeacherEmail={newTeacherEmail}
-                setNewTeacherEmail={setNewTeacherEmail}
-                newTeacherPassword={newTeacherPassword}
-                setNewTeacherPassword={setNewTeacherPassword}
-                saveTeacherToSupabase={saveTeacherToSupabase}
-                setTeacherList={setTeacherList}
-                setEditingTeacher={setEditingTeacher}
-                setEditName={setEditName}
-                setEditEmail={setEditEmail}
-                setEditPassword={setEditPassword}
-                editName={editName}
-                editEmail={editEmail}
-                editPassword={editPassword}
-                editingTeacher={editingTeacher}
-                updateTeacherInSupabase={updateTeacherInSupabase}
-                setUserActive={setUserActive}
-                deleteTeacher={deleteTeacher}
-              />
-            )}
-          </>
-        ) : (
-          <TeacherDashboard
-            currentUser={currentUser}
-            studentsContent={
-              <StudentManagement
-                currentUser={currentUser}
-                studentList={studentList}
-                setStudentList={setStudentList}
-                newStudentName={newStudentName}
-                setNewStudentName={setNewStudentName}
-                newStudentEmail={newStudentEmail}
-                setNewStudentEmail={setNewStudentEmail}
-                editingStudent={editingStudent}
-                setEditingStudent={setEditingStudent}
-                editStudentName={editStudentName}
-                setEditStudentName={setEditStudentName}
-                editStudentEmail={editStudentEmail}
-                setEditStudentEmail={setEditStudentEmail}
-                saveStudentToSupabase={saveStudentToSupabase}
-                updateStudentInSupabase={updateStudentInSupabase}
-                deleteStudent={deleteStudent}
-                editStudentPassword={editStudentPassword}
-                setEditStudentPassword={setEditStudentPassword}
-
-                teacherList={teacherList}
-                assigningStudent={assigningStudent}
-                setAssigningStudent={setAssigningStudent}
-                selectedTeacherId={selectedTeacherId}
-                setSelectedTeacherId={setSelectedTeacherId}
-                assignStudentToTeacher={assignStudentToTeacher}
-                selectedStudent={selectedStudent}
-                setSelectedStudent={setSelectedStudent}
-              />
-            }
-          />
-        )}
-      </main>
-      {selectedStudent && (
-  <ProgressModal
-      student={selectedStudent}
-      onClose={() => setSelectedStudent(null)}
-  />
-)}
+      {adminTab === "teachers" && (
+        <TeacherManagement
+          teacherList={teacherList}
+          newTeacherName={newTeacherName}
+          setNewTeacherName={setNewTeacherName}
+          newTeacherEmail={newTeacherEmail}
+          setNewTeacherEmail={setNewTeacherEmail}
+          newTeacherPassword={newTeacherPassword}
+          setNewTeacherPassword={setNewTeacherPassword}
+          saveTeacherToSupabase={saveTeacherToSupabase}
+          setTeacherList={setTeacherList}
+          setEditingTeacher={setEditingTeacher}
+          setEditName={setEditName}
+          setEditEmail={setEditEmail}
+          setEditPassword={setEditPassword}
+          editName={editName}
+          editEmail={editEmail}
+          editPassword={editPassword}
+          editingTeacher={editingTeacher}
+          updateTeacherInSupabase={updateTeacherInSupabase}
+          setUserActive={setUserActive}
+          deleteTeacher={deleteTeacher}
+        />
+      )}
+    </>
+  ) : (
+    <TeacherDashboard
+      currentUser={currentUser}
+      studentsContent={
+        <StudentManagement
+          currentUser={currentUser}
+          studentList={studentList}
+          setStudentList={setStudentList}
+          newStudentName={newStudentName}
+          setNewStudentName={setNewStudentName}
+          newStudentEmail={newStudentEmail}
+          setNewStudentEmail={setNewStudentEmail}
+          editingStudent={editingStudent}
+          setEditingStudent={setEditingStudent}
+          editStudentName={editStudentName}
+          setEditStudentName={setEditStudentName}
+          editStudentEmail={editStudentEmail}
+          setEditStudentEmail={setEditStudentEmail}
+          saveStudentToSupabase={saveStudentToSupabase}
+          updateStudentInSupabase={updateStudentInSupabase}
+          deleteStudent={deleteStudent}
+          editStudentPassword={editStudentPassword}
+          setEditStudentPassword={setEditStudentPassword}
+          teacherList={teacherList}
+          assigningStudent={assigningStudent}
+          setAssigningStudent={setAssigningStudent}
+          selectedTeacherId={selectedTeacherId}
+          setSelectedTeacherId={setSelectedTeacherId}
+          assignStudentToTeacher={assignStudentToTeacher}
+          selectedStudent={selectedStudent}
+          setSelectedStudent={setSelectedStudent}
+        />
+      }
+    />
+  )}
+</main>
     </div>
   );
 }

@@ -9,6 +9,7 @@ import {
   saveNoteToSupabase,
   uploadNoteImage,
 } from "../../lib/supabase";
+import { loadLessonsForSection } from "../../lib/supabase";
 
 import {
   LEVEL_META,
@@ -29,6 +30,12 @@ interface NoteData {
   text: string | null;
   image_url: string | null;
   created_at: string;
+}
+function getYouTubeEmbedUrl(url: string): string | null {
+  const match = url.match(
+    /(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/
+  );
+  return match ? `https://www.youtube.com/embed/${match[1]}` : null;
 }
 
 function LevelView({
@@ -52,6 +59,13 @@ function LevelView({
   const [newImageFile, setNewImageFile] = useState<File | null>(null);
   const [newImagePreview, setNewImagePreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [lessons, setLessons] = useState<any[]>([]);
+
+  useEffect(() => {
+  loadLessonsForSection(category.id, section.id).then((all) =>
+    setLessons(all.filter((l: any) => !l.level || l.level === level))
+  );
+}, [category.id, section.id, level]);
 
  
   useEffect(() => {
@@ -132,65 +146,95 @@ function LevelView({
     {/* Vinstri dálkur: Glósur - birtist á eftir dæmum á síma, en vinstra megin á tölvu */}
     <div className="order-2 lg:order-1 space-y-6">
 
-      {teacherNotes.length > 0 && (
-        <div className="bg-card border border-border rounded-xl overflow-hidden">
-          <div className="px-4 py-3 border-b border-border">
-            <span className="font-semibold text-sm">📘 Glósur frá kennara</span>
-          </div>
-          <div className="px-4 py-3 space-y-3">
-            {teacherNotes.map((note) => (
-              <div key={note.id} className="border rounded-lg p-3">
-                {note.text && <p className="text-sm">{note.text}</p>}
-                {note.image_url && (
-                  <img src={note.image_url} className="mt-2 max-h-32 rounded-lg w-full object-cover" />
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div className="bg-card border border-border rounded-xl overflow-hidden">
-        <div className="px-4 py-3 border-b border-border">
-          <span className="font-semibold text-sm">✏️ Mínar glósur</span>
-        </div>
-        <div className="px-4 py-3 space-y-3">
-          <textarea
-            value={newNoteText}
-            onChange={(e) => setNewNoteText(e.target.value)}
-            placeholder="Skrifaðu þína eigin glósu hér..."
-            className="w-full border rounded-lg p-2 text-sm"
-            rows={3}
-          />
-          <input type="file" accept="image/*" onChange={handleImageChange} />
-          {newImagePreview && (
-            <img src={newImagePreview} className="max-h-28 rounded-lg border w-full object-cover" />
-          )}
-          <button
-            onClick={handleAddMyNote}
-            disabled={saving}
-            className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg text-sm disabled:opacity-50"
-          >
-            {saving ? "Vistar..." : "Vista glósu"}
-          </button>
-
-          {myNotes.length > 0 && (
-            <div className="space-y-2 mt-3">
-              {myNotes.map((note) => (
-                <div key={note.id} className="border rounded-lg p-3">
-                  {note.text && <p className="text-sm">{note.text}</p>}
-                  {note.image_url && (
-                    <img src={note.image_url} className="mt-2 max-h-32 rounded-lg w-full object-cover" />
-                  )}
+  {lessons.length > 0 && (
+    <div className="bg-card border border-border rounded-xl overflow-hidden">
+      <div className="px-4 py-3 border-b border-border">
+        <span className="font-semibold text-sm">🎥 Kennslustund</span>
+      </div>
+      <div className="px-4 py-3 space-y-4">
+        {lessons.map((lesson) => {
+          const embedUrl = getYouTubeEmbedUrl(lesson.video_url);
+          return (
+            <div key={lesson.id}>
+              <div className="font-semibold text-sm mb-1">{lesson.title}</div>
+              {lesson.description && (
+                <p className="text-sm text-muted-foreground mb-2">{lesson.description}</p>
+              )}
+              {embedUrl && (
+                <div className="aspect-video">
+                  <iframe
+                    src={embedUrl}
+                    className="w-full h-full rounded-lg"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
                 </div>
-              ))}
+              )}
             </div>
-          )}
-        </div>
+          );
+        })}
       </div>
     </div>
+  )}
 
-    {/* Hægri dálkur: Verkefnið og "Ljúka stigi" hnappurinn - birtist fyrst á síma */}
+  {teacherNotes.length > 0 && (
+    <div className="bg-card border border-border rounded-xl overflow-hidden">
+      <div className="px-4 py-3 border-b border-border">
+        <span className="font-semibold text-sm">📘 Glósur frá kennara</span>
+      </div>
+      <div className="px-4 py-3 space-y-3">
+        {teacherNotes.map((note) => (
+          <div key={note.id} className="border rounded-lg p-3">
+            {note.text && <p className="text-sm">{note.text}</p>}
+            {note.image_url && (
+              <img src={note.image_url} className="mt-2 max-h-32 rounded-lg w-full object-cover" />
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  )}
+
+  <div className="bg-card border border-border rounded-xl overflow-hidden">
+    <div className="px-4 py-3 border-b border-border">
+      <span className="font-semibold text-sm">✏️ Mínar glósur</span>
+    </div>
+    <div className="px-4 py-3 space-y-3">
+      <textarea
+        value={newNoteText}
+        onChange={(e) => setNewNoteText(e.target.value)}
+        placeholder="Skrifaðu þína eigin glósu hér..."
+        className="w-full border rounded-lg p-2 text-sm"
+        rows={3}
+      />
+      <input type="file" accept="image/*" onChange={handleImageChange} />
+      {newImagePreview && (
+        <img src={newImagePreview} className="max-h-28 rounded-lg border w-full object-cover" />
+      )}
+      <button
+        onClick={handleAddMyNote}
+        disabled={saving}
+        className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg text-sm disabled:opacity-50"
+      >
+        {saving ? "Vistar..." : "Vista glósu"}
+      </button>
+
+      {myNotes.length > 0 && (
+        <div className="space-y-2 mt-3">
+          {myNotes.map((note) => (
+            <div key={note.id} className="border rounded-lg p-3">
+              {note.text && <p className="text-sm">{note.text}</p>}
+              {note.image_url && (
+                <img src={note.image_url} className="mt-2 max-h-32 rounded-lg w-full object-cover" />
+              )}
+            </div>   
+          ))}
+        </div>
+      )}
+    </div>
+  </div>
+</div>
+
     <div className="order-1 lg:order-2 space-y-6">
       <div className="bg-card border border-border rounded-xl overflow-hidden">
         <div className="px-5 py-4 border-b border-border flex items-center gap-3">

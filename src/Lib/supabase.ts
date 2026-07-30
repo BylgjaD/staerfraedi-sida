@@ -323,3 +323,17 @@ export async function deleteLessonFromSupabase(id: string) {
     console.error(error);
   }
 }
+export async function loadLessonsForSection(categoryId: string, sectionId: string) {
+  const { data, error } = await supabase
+    .from("lessons")
+    .select("*")
+    .eq("category_id", categoryId)
+    .eq("section_id", sectionId)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error(error);
+    return [];
+  }
+  return data;
+}
