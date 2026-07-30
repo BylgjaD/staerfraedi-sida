@@ -11,6 +11,8 @@ import {
   deleteStudentFromSupabase,
   loadTeachersFromProfiles, 
   setTeacherActive,
+  loadAllStudents,
+  assignStudentToTeacher,
 } from "../../lib/supabase";
 
 import TeacherDashboard from "./TeacherDashboard";
@@ -18,6 +20,7 @@ import AdminDashboard from "./AdminDashboard";
 import { LogOut, GraduationCap } from "lucide-react";
 import StudentManagement from "./StudentManagement";
 import TeacherManagement from "./TeacherManagement";
+import ProgressModal from "./ProgressModal";
 
 
 interface TeacherViewProps {
@@ -43,18 +46,27 @@ export default function TeacherView({
        useState<UserData | null>(null);
     const [editingStudent, setEditingStudent] =
        useState<UserData | null>(null);
+    const [assigningStudent, setAssigningStudent] = useState<UserData | null>(null);
+    const [selectedTeacherId, setSelectedTeacherId] = useState("");
     
     const [editStudentName, setEditStudentName] = useState("");
     const [editStudentEmail, setEditStudentEmail] = useState("");
     const [editName, setEditName] = useState("");
     const [editEmail, setEditEmail] = useState("");
     const [editPassword, setEditPassword] = useState("");
+    const [selectedStudent, setSelectedStudent] = useState<UserData | null>(null);
       
     useEffect(() => {
-  loadStudentsForTeacher(currentUser.id).then((data) => {
-    setStudentList(data as UserData[]);
-  });
-}, [currentUser.id]);
+  if (currentUser.role === "admin") {
+    loadAllStudents().then((data) => {
+      setStudentList(data as UserData[]);
+    });
+  } else {
+    loadStudentsForTeacher(currentUser.id).then((data) => {
+      setStudentList(data as UserData[]);
+    });
+  }
+}, [currentUser]);
     
       const isAdmin = currentUser.role === "admin";
       const [adminTab, setAdminTab] = useState<"students" | "teachers">("students");
@@ -148,7 +160,6 @@ return (
               >
                 Nemendur
               </button>
-
               <button
                 onClick={() => setAdminTab("teachers")}
                 className="px-3 py-2 rounded border"
@@ -156,29 +167,42 @@ return (
                 Kennarar
               </button>
             </div>
+            
 
-            {adminTab === "students" && (
-              <StudentManagement
-                currentUser={currentUser}
-                studentList={studentList}
-                setStudentList={setStudentList}
-                newStudentName={newStudentName}
-                setNewStudentName={setNewStudentName}
-                newStudentEmail={newStudentEmail}
-                setNewStudentEmail={setNewStudentEmail}
-                editingStudent={editingStudent}
-                setEditingStudent={setEditingStudent}
-                editStudentName={editStudentName}
-                setEditStudentName={setEditStudentName}
-                editStudentEmail={editStudentEmail}
-                setEditStudentEmail={setEditStudentEmail}
-                saveStudentToSupabase={saveStudentToSupabase}
-                updateStudentInSupabase={updateStudentInSupabase}
-                deleteStudent={deleteStudent}
-                editStudentPassword={editStudentPassword}
-                setEditStudentPassword={setEditStudentPassword}
-              />
-            )}
+           {adminTab === "students" && (
+  <StudentManagement
+    currentUser={currentUser}
+    studentList={studentList}
+    setStudentList={setStudentList}
+
+    teacherList={teacherList}
+
+    assigningStudent={assigningStudent}
+    setAssigningStudent={setAssigningStudent}
+
+    selectedTeacherId={selectedTeacherId}
+    setSelectedTeacherId={setSelectedTeacherId}
+
+    newStudentName={newStudentName}
+    setNewStudentName={setNewStudentName}
+    newStudentEmail={newStudentEmail}
+    setNewStudentEmail={setNewStudentEmail}
+    editingStudent={editingStudent}
+    setEditingStudent={setEditingStudent}
+    editStudentName={editStudentName}
+    setEditStudentName={setEditStudentName}
+    editStudentEmail={editStudentEmail}
+    setEditStudentEmail={setEditStudentEmail}
+    saveStudentToSupabase={saveStudentToSupabase}
+    updateStudentInSupabase={updateStudentInSupabase}
+    deleteStudent={deleteStudent}
+    editStudentPassword={editStudentPassword}
+    setEditStudentPassword={setEditStudentPassword}
+    assignStudentToTeacher={assignStudentToTeacher}
+    selectedStudent={selectedStudent}
+    setSelectedStudent={setSelectedStudent}
+  />
+)}
 
             {adminTab === "teachers" && (
               <TeacherManagement
@@ -228,11 +252,26 @@ return (
                 deleteStudent={deleteStudent}
                 editStudentPassword={editStudentPassword}
                 setEditStudentPassword={setEditStudentPassword}
+
+                teacherList={teacherList}
+                assigningStudent={assigningStudent}
+                setAssigningStudent={setAssigningStudent}
+                selectedTeacherId={selectedTeacherId}
+                setSelectedTeacherId={setSelectedTeacherId}
+                assignStudentToTeacher={assignStudentToTeacher}
+                selectedStudent={selectedStudent}
+                setSelectedStudent={setSelectedStudent}
               />
             }
           />
         )}
       </main>
+      {selectedStudent && (
+  <ProgressModal
+      student={selectedStudent}
+      onClose={() => setSelectedStudent(null)}
+  />
+)}
     </div>
   );
 }

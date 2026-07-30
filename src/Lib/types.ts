@@ -16,5 +16,6 @@ export interface UserData {
   password:string;
   name: string;
   role: "student" | "teacher" | "admin";
+  teacher_id: string | null;
   completed: LevelKey[];
 }

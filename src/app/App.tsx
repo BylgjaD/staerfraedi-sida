@@ -142,6 +142,7 @@ const login = async (email: string, pass: string): Promise<string | null> => {
     email: data.user.email!,
     name: profile.name,
     role: profile.role,
+      teacher_id: profile.teacher_id ?? null,
     completed: [],
     password: "",
   };

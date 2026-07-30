@@ -24,6 +24,15 @@ interface StudentManagementProps {
     editStudentPassword: string;
     setEditStudentPassword: React.Dispatch<React.SetStateAction<string>>;
     currentUser: UserData;
+
+    teacherList: UserData[];
+    assigningStudent: UserData | null;
+    setAssigningStudent: React.Dispatch<React.SetStateAction<UserData | null>>;
+    selectedTeacherId: string;
+    setSelectedTeacherId: React.Dispatch<React.SetStateAction<string>>;
+    assignStudentToTeacher: (studentId: string,teacherId: string | null) => Promise<void>;
+    selectedStudent: UserData | null;
+    setSelectedStudent: React.Dispatch<React.SetStateAction<UserData | null>>;
   }
 
 export default function StudentManagement({
@@ -45,6 +54,14 @@ export default function StudentManagement({
   setEditStudentPassword,
   editStudentPassword,
   currentUser,
+  teacherList,
+ assigningStudent,
+ setAssigningStudent,
+ selectedTeacherId,
+ setSelectedTeacherId,
+assignStudentToTeacher,
+selectedStudent,
+setSelectedStudent,
 
 }: StudentManagementProps) {
   const [saving, setSaving] = useState(false); 
@@ -82,11 +99,72 @@ export default function StudentManagement({
             setEditStudentName(student.name);
             setEditStudentEmail(student.email);
           }}
+          
           className="px-3 py-1 rounded border h-fit"
         >
           Breyta
         </button>
         <button
+  onClick={() => {
+    setAssigningStudent(student);
+    setSelectedTeacherId(student.teacher_id || "");
+  }}
+  className="px-3 py-1 rounded border"
+>
+  Tengja við kennara
+</button>
+
+{assigningStudent?.id === student.id && (
+  <div className="mt-3 border-t pt-3">
+    <select
+      value={selectedTeacherId}
+      onChange={(e) => setSelectedTeacherId(e.target.value)}
+      className="border rounded px-2 py-1"
+    >
+      <option value="">Veldu kennara</option>
+
+      {teacherList.map((teacher) => (
+        <option key={teacher.id} value={teacher.id}>
+          {teacher.name}
+        </option>
+      ))}
+    </select>
+
+   <button
+   
+  onClick={async () => {
+  if (!assigningStudent || !selectedTeacherId) return; 
+  
+  await assignStudentToTeacher(
+    assigningStudent.id,
+    selectedTeacherId
+  );
+
+  setStudentList((prev) =>
+    prev.map((student) =>
+      student.id === assigningStudent.id
+        ? { ...student, teacher_id: selectedTeacherId }
+        : student
+    )
+  );
+
+  setAssigningStudent(null);
+}}
+  
+>
+  Vista
+</button>
+
+    <button
+      onClick={() => setAssigningStudent(null)}
+      className="ml-2 px-3 py-1 rounded border"
+    >
+      Hætta við
+    </button>
+  </div>
+)}
+
+<button
   onClick={() => deleteStudent(student.email)}
   className="px-3 py-1 rounded border text-red-600"
 >
@@ -96,8 +174,10 @@ export default function StudentManagement({
         <div className="text-sm text-muted-foreground">
           <button
   className="text-sm text-blue-600 hover:underline"
+
+  onClick={() => setSelectedStudent(student)}
 >
-  Skoða framvindu →
+    📊 Skoða framvindu →
 </button>
 </div>
 
@@ -180,6 +260,7 @@ export default function StudentManagement({
     alert(data?.error || error?.message || "Villa við að búa til nemanda");
   } else {
     const newStudent = {
+      id: data.id,
       email: newStudentEmail,
       name: newStudentName,
       role: "student",
@@ -217,3 +298,4 @@ export default function StudentManagement({
     </div>
   );
   }
+  

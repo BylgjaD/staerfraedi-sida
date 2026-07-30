@@ -157,23 +157,10 @@ export default function TeacherManagement({
   Eyða
 </button>
 </div>
+                  </div>
                     
 
-<div className="flex gap-2">
 
-  <button
-  onClick={() => {
-    setEditingTeacher(teacher);
-    setEditName(teacher.name);
-    setEditEmail(teacher.email);
-    setEditPassword(teacher.password);
-  }}
-  className="px-3 py-1 rounded border"
->
-      Eyða
-</button>
-  </div>
-</div>
 ))} 
       <input
         value={editName}
@@ -240,4 +227,5 @@ export default function TeacherManagement({
 
       </div>
     </div>
-)}
+  );
+}

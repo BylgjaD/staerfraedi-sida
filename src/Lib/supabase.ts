@@ -231,9 +231,8 @@ export async function loadStudentsForTeacher(teacherId: string) {
     console.error(error);
     return [];
   }
-
-  return data;
-}
+  
+  return data;}
 export async function setTeacherActive(teacherId: string, active: boolean) {
   const { error } = await supabase
     .from("profiles")
@@ -243,6 +242,19 @@ export async function setTeacherActive(teacherId: string, active: boolean) {
   if (error) {
     console.error(error);
   }
+}
+export async function loadAllStudents() {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("role", "student");
+
+  if (error) {
+    console.error(error);
+    return [];
+  }
+
+  return data;
 }
 export async function loadTeachersFromProfiles() {
   const { data, error } = await supabase
@@ -256,4 +268,20 @@ export async function loadTeachersFromProfiles() {
   }
 
   return data;
+}
+export async function assignStudentToTeacher(
+  studentId: string,
+  teacherId: string | null
+) {
+  const { error } = await supabase
+    .from("profiles")
+    .update({
+      teacher_id: teacherId,
+    })
+    .eq("id", studentId);
+
+  if (error) {
+    console.error(error);
+    throw error;
+  }
 }
