@@ -14,6 +14,7 @@ import {
 
 import {
   LEVEL_META,
+  LEVELS,
   CategoryData,
   SectionData,
 } from "../../data/categories";
@@ -39,12 +40,13 @@ interface ExerciseData {
   level: string;
   question_number: number;
   question_text: string;
-  answer_type: "multiple_choice" | "numeric";
+  answer_type: "multiple_choice" | "numeric" | "text";
   choices: string[] | null;
   correct_answer: string;
   hint1: string | null;
   hint2: string | null;
   hint3: string | null;
+  image_url: string | null;
 }
 function getYouTubeEmbedUrl(url: string): string | null {
   const match = url.match(
@@ -156,15 +158,82 @@ const handleShowHint = (exerciseId: string) => {
    const handleComplete = () => {
     onComplete();
     setJustCompleted(true);
-    setTimeout(onBack, 1200);
+    setTimeout(onBack, 2200);
   };
   const allExercisesCorrect =      
     exercises.length > 0 && exercises.every((ex) => feedback[ex.id] === "correct");
   const canComplete = exercises.length === 0 || allExercisesCorrect;
+  const solvedCount = exercises.filter((e) => feedback[e.id] === "correct").length;
+  const currentLevelIndex = LEVELS.indexOf(level);   // ← bæta þessum tveimur línum við
+  const nextLevel = LEVELS[currentLevelIndex + 1];  
 
-   return (
+ return (
     <div className="min-h-screen bg-background" style={{ fontFamily: "'Outfit', sans-serif" }}>
-       <header className="sticky top-0 z-20 bg-card border-b border-border">
+      {justCompleted && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+    <div className="confetti-container pointer-events-none">
+      {Array.from({ length: 40 }).map((_, i) => {
+        const colors = ["#059669", "#2563eb", "#d97706", "#dc2626", "#7c3aed", "#c8952a"];
+        return (
+          <span
+            key={i}
+            className="confetti-piece"
+            style={{
+              left: `${Math.random() * 100}%`,
+              background: colors[i % colors.length],
+              animationDelay: `${Math.random() * 0.4}s`,
+              animationDuration: `${1 + Math.random() * 0.8}s`,
+            }}
+          />
+        );
+      })}
+    </div>
+
+    <div className="bg-white rounded-2xl p-8 text-center shadow-2xl z-10 mx-4 max-w-sm celebrate-pop">
+      <div className="text-6xl mb-3">🎉</div>
+      <h2 className="text-xl font-bold mb-2" style={{ color: "#1e3a5f" }}>
+        Frábært! {section.name} · {meta.label} er lokið!
+      </h2>
+      {nextLevel ? (
+        <p className="text-sm text-muted-foreground">
+          {LEVEL_META[nextLevel].label} er núna opið fyrir þig! 🚀
+        </p>
+      ) : (
+        <p className="text-sm text-muted-foreground">
+          Þú hefur náð lengst í þessum kafla! 🏆
+        </p>
+      )}
+    </div>
+
+    <style>{`
+      .confetti-container {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+      }
+      .confetti-piece {
+        position: absolute;
+        top: -10px;
+        width: 8px;
+        height: 14px;
+        opacity: 0.9;
+        animation: confetti-fall linear forwards;
+      }
+      @keyframes confetti-fall {
+        0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+        100% { transform: translateY(100vh) rotate(360deg); opacity: 0.3; }
+      }
+      .celebrate-pop {
+        animation: celebrate-pop 0.4s ease-out;
+      }
+      @keyframes celebrate-pop {
+        0% { transform: scale(0.7); opacity: 0; }
+        100% { transform: scale(1); opacity: 1; }
+      }
+    `}</style>
+  </div>
+)}
+      <header className="sticky top-0 z-20 bg-card border-b border-border">
         <div className="max-w-3xl mx-auto px-4 h-14 flex items-center gap-3">
           <button onClick={onBack}
             className="flex items-center gap-2 text-sm font-semibold hover:text-foreground text-muted-foreground transition-colors">
@@ -173,221 +242,277 @@ const handleShowHint = (exerciseId: string) => {
         </div>
       </header>
 
-            <main className="max-w-5xl mx-auto px-4 py-12">
-  <div className="text-center mb-10">
-    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold mb-4"
-      style={{ background: `${meta.hex}15`, color: meta.hex }}>
-      <span className="text-base font-bold">{level}</span> {meta.label}
-    </div>
-    <PageHeader
-      title={`${section.abbr}-${level} · ${section.name}`}
-      description={category.name}
-    />
-  </div>
+      <main className="max-w-5xl mx-auto px-4 py-12">
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold mb-4"
+            style={{ background: `${meta.hex}15`, color: meta.hex }}>
+            <span className="text-base font-bold">{level}</span> {meta.label}
+          </div>
+          <PageHeader
+            title={`${section.abbr}-${level} · ${section.name}`}
+            description={category.name}
+          />
+        </div>
 
-  <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-6 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-6 items-start">
 
-    {/* Vinstri dálkur: Glósur - birtist á eftir dæmum á síma, en vinstra megin á tölvu */}
-    <div className="order-2 lg:order-1 space-y-6">
+          {/* Vinstri dálkur: Kennslustund + Glósur */}
+          <div className="order-2 lg:order-1 space-y-6">
 
-  {lessons.length > 0 && (
-    <div className="bg-card border border-border rounded-xl overflow-hidden">
-      <div className="px-4 py-3 border-b border-border">
-        <span className="font-semibold text-sm">🎥 Kennslustund</span>
-      </div>
-      <div className="px-4 py-3 space-y-4">
-        {lessons.map((lesson) => {
-          const embedUrl = getYouTubeEmbedUrl(lesson.video_url);
-          return (
-            <div key={lesson.id}>
-              <div className="font-semibold text-sm mb-1">{lesson.title}</div>
-              {lesson.description && (
-                <p className="text-sm text-muted-foreground mb-2">{lesson.description}</p>
-              )}
-              {embedUrl && (
-                <div className="aspect-video">
-                  <iframe
-                    src={embedUrl}
-                    className="w-full h-full rounded-lg"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  />
+            {lessons.length > 0 && (
+              <div className="bg-card border border-border rounded-xl overflow-hidden">
+                <div className="px-4 py-3 border-b border-border">
+                  <span className="font-semibold text-sm">🎥 Kennslustund</span>
                 </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  )}
-
-  {teacherNotes.length > 0 && (
-    <div className="bg-card border border-border rounded-xl overflow-hidden">
-      <div className="px-4 py-3 border-b border-border">
-        <span className="font-semibold text-sm">📘 Glósur frá kennara</span>
-      </div>
-      <div className="px-4 py-3 space-y-3">
-        {teacherNotes.map((note) => (
-          <div key={note.id} className="border rounded-lg p-3">
-            {note.text && <p className="text-sm">{note.text}</p>}
-            {note.image_url && (
-              <img src={note.image_url} className="mt-2 max-h-32 rounded-lg w-full object-cover" />
+                <div className="px-4 py-3 space-y-4">
+                  {lessons.map((lesson) => {
+                    const embedUrl = getYouTubeEmbedUrl(lesson.video_url);
+                    return (
+                      <div key={lesson.id}>
+                        <div className="font-semibold text-sm mb-1">{lesson.title}</div>
+                        {lesson.description && (
+                          <p className="text-sm text-muted-foreground mb-2">{lesson.description}</p>
+                        )}
+                        {embedUrl && (
+                          <div className="aspect-video">
+                            <iframe
+                              src={embedUrl}
+                              className="w-full h-full rounded-lg"
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                              allowFullScreen
+                            />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             )}
+
+            {teacherNotes.length > 0 && (
+              <div className="bg-card border border-border rounded-xl overflow-hidden">
+                <div className="px-4 py-3 border-b border-border">
+                  <span className="font-semibold text-sm">📘 Glósur frá kennara</span>
+                </div>
+                <div className="px-4 py-3 space-y-3">
+                  {teacherNotes.map((note) => (
+                    <div key={note.id} className="border rounded-lg p-3">
+                      {note.text && <p className="text-sm">{note.text}</p>}
+                      {note.image_url && (
+                        <img src={note.image_url} className="mt-2 max-h-32 rounded-lg w-full object-cover" />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="bg-card border border-border rounded-xl overflow-hidden">
+              <div className="px-4 py-3 border-b border-border">
+                <span className="font-semibold text-sm">✏️ Mínar glósur</span>
+              </div>
+              <div className="px-4 py-3 space-y-3">
+                <textarea
+                  value={newNoteText}
+                  onChange={(e) => setNewNoteText(e.target.value)}
+                  placeholder="Skrifaðu þína eigin glósu hér..."
+                  className="w-full border rounded-lg p-2 text-sm"
+                  rows={3}
+                />
+                <input type="file" accept="image/*" onChange={handleImageChange} />
+                {newImagePreview && (
+                  <img src={newImagePreview} className="max-h-28 rounded-lg border w-full object-cover" />
+                )}
+                <button
+                  onClick={handleAddMyNote}
+                  disabled={saving}
+                  className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg text-sm disabled:opacity-50"
+                >
+                  {saving ? "Vistar..." : "Vista glósu"}
+                </button>
+
+                {myNotes.length > 0 && (
+                  <div className="space-y-2 mt-3">
+                    {myNotes.map((note) => (
+                      <div key={note.id} className="border rounded-lg p-3">
+                        {note.text && <p className="text-sm">{note.text}</p>}
+                        {note.image_url && (
+                          <img src={note.image_url} className="mt-2 max-h-32 rounded-lg w-full object-cover" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Hægri dálkur: Verkefni + Ljúka stigi */}
+          <div className="order-1 lg:order-2 space-y-6">
+            <div className="bg-card border border-border rounded-xl overflow-hidden">
+              <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <BookOpen size={18} style={{ color: category.accentColor }} />
+                  <span className="font-semibold text-sm">Verkefni</span>
+                </div>
+                {exercises.length > 0 && (
+                  <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ background: `${meta.hex}15`, color: meta.hex }}>
+                    {solvedCount}/{exercises.length} leyst
+                  </span>
+                )}
+              </div>
+               </div>
+
+              <div className="px-5 py-6">
+                {exercises.length === 0 && (
+                  <p className="text-sm text-muted-foreground text-center">
+                    Engin dæmi ennþá fyrir þetta stig.
+                  </p>
+                )}
+
+               <div className="flex gap-4 items-start">
+                <div className="flex-1 space-y-6 min-w-0">
+                  {exercises.map((exercise, idx) => {
+                    const previousSolved =
+                      idx === 0 || feedback[exercises[idx - 1].id] === "correct";
+                    if (!previousSolved) return null;
+
+                    const shownHints = hintsShown[exercise.id] || 0;
+                    const hints = [exercise.hint1, exercise.hint2, exercise.hint3].filter(Boolean);
+                    const fb = feedback[exercise.id];
+
+                    if (fb === "correct") {
+                      return (
+                        <div key={exercise.id} className="flex items-center gap-2 text-emerald-600 text-sm py-2 px-4 border rounded-lg bg-emerald-50">
+                          <CheckCircle2 size={16} />
+                          <span>Dæmi #{exercise.question_number} — leyst ({studentAnswers[exercise.id]})</span>
+                        </div>
+                      );
+                    }
+                    const currentLevelIndex = LEVELS.indexOf(level);
+const nextLevel = LEVELS[currentLevelIndex + 1]; // undefined ef þetta var síðasta stigið (Alfa)
+
+                    return (
+                      <div key={exercise.id} className="border rounded-xl p-4">
+                        <div className="text-xs text-muted-foreground mb-1">
+                          Dæmi #{exercise.question_number}
+                        </div>
+                        <p className="font-medium mb-3">{exercise.question_text}</p>
+
+                        {exercise.image_url && (
+                          <img src={exercise.image_url} className="mb-3 max-h-64 rounded-lg border w-full object-contain" />
+                        )}
+
+                        {exercise.answer_type !== "multiple_choice" ? (
+                          <input
+                            type="text"
+                            value={studentAnswers[exercise.id] || ""}
+                            onChange={(e) =>
+                              setStudentAnswers({ ...studentAnswers, [exercise.id]: e.target.value })
+                            }
+                            placeholder="Svarið þitt"
+                            className="w-full border rounded-lg p-2 text-sm mb-2"
+                          />
+                        ) : (
+                          <div className="space-y-2 mb-2">
+                            {exercise.choices?.map((choice, i) => (
+                              <label key={i} className="flex items-center gap-2 text-sm">
+                                <input
+                                  type="radio"
+                                  name={`exercise-${exercise.id}`}
+                                  checked={studentAnswers[exercise.id] === choice}
+                                  onChange={() =>
+                                    setStudentAnswers({ ...studentAnswers, [exercise.id]: choice })
+                                  }
+                                />
+                                {choice}
+                              </label>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <button
+                            onClick={() => handleCheckAnswer(exercise)}
+                            className="px-3 py-1.5 rounded-lg text-sm text-white"
+                            style={{ background: meta.hex }}
+                          >
+                            Athuga svar
+                          </button>
+
+                          {shownHints < 3 && (
+                            <button
+                              onClick={() => handleShowHint(exercise.id)}
+                              className="px-3 py-1.5 rounded-lg border text-sm"
+                            >
+                              💡 Fá vísbendingu
+                            </button>
+                          )}
+                        </div>
+
+                        {fb === "incorrect" && (
+                          <p className="text-red-600 text-sm font-medium mt-2">Ekki alveg — prófaðu aftur.</p>
+                        )}
+
+                        {shownHints > 0 && (
+                          <div className="mt-3 space-y-1.5">
+                            {hints.slice(0, shownHints).map((hint, i) => (
+                              <div key={i} className="text-sm bg-amber-50 border border-amber-200 rounded-lg p-2">
+                                💡 Vísbending {i + 1}: {hint}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                    {/* Hliðardálkur: læst, framundan dæmi */}
+    <div className="hidden sm:flex flex-col gap-2 w-32 shrink-0">
+      {exercises
+        .filter((ex) => feedback[ex.id] !== "correct")
+        .slice(1)
+        .map((ex) => (
+          <div
+            key={ex.id}
+            className="flex items-center justify-center gap-1.5 py-3 px-2 rounded-lg border border-dashed text-xs text-muted-foreground bg-muted/20"
+          >
+            <Lock size={12} />
+            Dæmi #{ex.question_number}
           </div>
         ))}
-      </div>
-    </div>
-  )}
-
-  <div className="bg-card border border-border rounded-xl overflow-hidden">
-    <div className="px-4 py-3 border-b border-border">
-      <span className="font-semibold text-sm">✏️ Mínar glósur</span>
-    </div>
-    <div className="px-4 py-3 space-y-3">
-      <textarea
-        value={newNoteText}
-        onChange={(e) => setNewNoteText(e.target.value)}
-        placeholder="Skrifaðu þína eigin glósu hér..."
-        className="w-full border rounded-lg p-2 text-sm"
-        rows={3}
-      />
-      <input type="file" accept="image/*" onChange={handleImageChange} />
-      {newImagePreview && (
-        <img src={newImagePreview} className="max-h-28 rounded-lg border w-full object-cover" />
-      )}
-      <button
-        onClick={handleAddMyNote}
-        disabled={saving}
-        className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg text-sm disabled:opacity-50"
-      >
-        {saving ? "Vistar..." : "Vista glósu"}
-      </button>
-
-      {myNotes.length > 0 && (
-        <div className="space-y-2 mt-3">
-          {myNotes.map((note) => (
-            <div key={note.id} className="border rounded-lg p-3">
-              {note.text && <p className="text-sm">{note.text}</p>}
-              {note.image_url && (
-                <img src={note.image_url} className="mt-2 max-h-32 rounded-lg w-full object-cover" />
-              )}
-            </div>   
-          ))}
-        </div>
-      )}
     </div>
   </div>
 </div>
+              
+            {isCompleted || justCompleted ? (
+              <div className="flex items-center justify-center gap-2 py-4 text-emerald-600 font-semibold">
+                <CheckCircle2 size={20} />
+                {justCompleted ? "Frábærlega gert! Hleður..." : "Þetta stig er þegar lokið"}
+              </div>
+            ) : (
+              <div>
+                <button
+                  onClick={handleComplete}
+                  disabled={!canComplete}
+                  className="w-full py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 hover:opacity-90 active:scale-98 text-white shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                  style={{ background: `linear-gradient(135deg, ${meta.hex}, ${meta.hex}cc)` }}
+                >
+                  Ljúka stigi {level} · {meta.label}
+                </button>
+                {exercises.length > 0 && !allExercisesCorrect && (
+                  <p className="text-xs text-muted-foreground text-center mt-2">
+                    Leystu öll dæmin rétt til að geta lokið þessu stigi.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
 
-    <div className="order-1 lg:order-2 space-y-6">
-      <div className="bg-card border border-border rounded-xl overflow-hidden">
-        <div className="px-5 py-4 border-b border-border flex items-center gap-3">
-          <BookOpen size={18} style={{ color: category.accentColor }} />
-          <span className="font-semibold text-sm">Verkefni</span>
         </div>
-        
-        <div className="px-5 py-6 space-y-6">
-  {exercises.length === 0 && (
-    <p className="text-sm text-muted-foreground text-center">
-      Engin dæmi ennþá fyrir þetta stig.
-    </p>
-  )}
-
-  {exercises.map((exercise) => {
-    const shownHints = hintsShown[exercise.id] || 0;
-    const hints = [exercise.hint1, exercise.hint2, exercise.hint3].filter(Boolean);
-    const fb = feedback[exercise.id];
-
-    return (
-      <div key={exercise.id} className="border rounded-xl p-4">
-        <div className="text-xs text-muted-foreground mb-1">
-          Dæmi #{exercise.question_number}
-        </div>
-        <p className="font-medium mb-3">{exercise.question_text}</p>
-
-      {exercise.answer_type === "numeric" ? (
-  <input
-    type="text"
-    value={studentAnswers[exercise.id] || ""}
-    onChange={(e) =>
-      setStudentAnswers({ ...studentAnswers, [exercise.id]: e.target.value })
-    }
-    placeholder="Svarið þitt"
-    className="w-full border rounded-lg p-2 text-sm mb-2"
-  />
-) : (
-  <div className="space-y-2 mb-2">
-    {exercise.choices?.map((choice, i) => (
-      <label key={i} className="flex items-center gap-2 text-sm">
-        <input
-          type="radio"
-          name={`exercise-${exercise.id}`}
-          checked={studentAnswers[exercise.id] === choice}
-          onChange={() =>
-            setStudentAnswers({ ...studentAnswers, [exercise.id]: choice })
-          }
-        />
-        {choice}
-      </label>
-    ))}
-  </div>
-)}
-
-<div className="flex items-center gap-2 flex-wrap">
-  <button
-    onClick={() => handleCheckAnswer(exercise)}
-    className="px-3 py-1.5 rounded-lg text-sm text-white"
-    style={{ background: meta.hex }}
-  >
-    Athuga svar
-  </button>
-
-  {shownHints < 3 && (
-    <button
-      onClick={() => handleShowHint(exercise.id)}
-      className="px-3 py-1.5 rounded-lg border text-sm"
-    >
-      💡 Fá vísbendingu
-    </button>
-  )}
-</div> 
-
-    {fb === "incorrect" && (
-      <p className="text-red-600 text-sm font-medium mt-2">Ekki alveg — prófaðu aftur.</p>
-    )}
-        </div>
-      );
-    })}
-  </div>
-
-      {isCompleted || justCompleted ? (
-  <div className="flex items-center justify-center gap-2 py-4 text-emerald-600 font-semibold">
-    <CheckCircle2 size={20} />
-    {justCompleted ? "Frábærlega gert! Hleður..." : "Þetta stig er þegar lokið"}
-  </div>
-) : (
-  <div>
-    <button
-      onClick={handleComplete}
-      disabled={!canComplete}
-      className="w-full py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 hover:opacity-90 active:scale-98 text-white shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
-      style={{ background: `linear-gradient(135deg, ${meta.hex}, ${meta.hex}cc)` }}
-    >
-      Ljúka stigi {level} · {meta.label}
-    </button>
-    {exercises.length > 0 && !allExercisesCorrect && (
-      <p className="text-xs text-muted-foreground text-center mt-2">
-        Leystu öll dæmin rétt til að geta lokið þessu stigi.
-      </p>
-    )}
-  </div>
-)}
-
-      </div>
+      </main>
     </div>
-  </div>
-  </main>
-</div>
   );
 }
 export default LevelView;

@@ -19,10 +19,8 @@ import {
 } from "../lib/types";
 
 import {
-  loadStudentsFromSupabase,
-  saveStudentToSupabase,
-  getStudentByEmail,
-  getTeacherByEmail,
+  loadProgressForStudent,
+  markLevelComplete,
 } from "../lib/supabase";
 
 import { supabase } from "../lib/supabase";
@@ -109,9 +107,15 @@ export default function App() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [activeLevel, setActiveLevel] = useState<{ catId: string; secId: string; level: Level } | null>(null);
 
- const completed = currentUser
-  ? users[currentUser.email]?.completed || []
-  : [];
+  const [studentCompleted, setStudentCompleted] = useState<string[]>([]);
+
+React.useEffect(() => {
+  if (currentUser && currentUser.role === "student") {
+    loadProgressForStudent(currentUser.id).then(setStudentCompleted);
+  }
+}, [currentUser]);
+
+ const completed = studentCompleted;
  
 const login = async (email: string, pass: string): Promise<string | null> => {
   const { data, error } = await supabase.auth.signInWithPassword({
@@ -162,16 +166,13 @@ const logout = async() => {
     setActiveLevel(null);
   };
 
-  const completeLevel = (catId: string, secId: string, level: Level) => {
-    if (!currentUser) return;
-    const key = lk(catId, secId, level);
-    const cur = users[currentUser.email];
-    if (!cur) return;
-    const newCompleted = Array.from(new Set([...cur.completed, key]));
-    const updated = { ...users, [currentUser.email]: { ...cur, completed: newCompleted } };
-    setUsers(updated);
-    saveUsers(updated);
-  };
+ const completeLevel = async (catId: string, secId: string, level: Level) => {
+  if (!currentUser) return;
+  const key = lk(catId, secId, level);
+
+  await markLevelComplete(currentUser.id, key);
+  setStudentCompleted((prev) => Array.from(new Set([...prev, key])));
+};
 
   if (view === "login") return <LoginView onLogin={login} />;
 

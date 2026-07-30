@@ -41,13 +41,14 @@ interface ExerciseData {
   level: string;
   question_number: number;
   question_text: string;
-  answer_type: "multiple_choice" | "numeric";
+  answer_type: "multiple_choice" | "numeric" | "text";
   choices: string[] | null;
   correct_answer: string;
   hint1: string | null;
   hint2: string | null;
   hint3: string | null;
   created_at: string;
+  image_url: string | null;
 }
 
 export default function TeacherDashboard( {currentUser, studentsContent}: TeacherDashboardProps) {
@@ -76,7 +77,7 @@ export default function TeacherDashboard( {currentUser, studentsContent}: Teache
  const [exerciseLevel, setExerciseLevel] = useState<string>(LEVELS[0]);
 
  const [questionText, setQuestionText] = useState("");
- const [answerType, setAnswerType] = useState<"multiple_choice" | "numeric">("numeric");
+ const [answerType, setAnswerType] = useState<"multiple_choice" | "numeric" | "text">("numeric");
  const [choice1, setChoice1] = useState("");
  const [choice2, setChoice2] = useState("");
  const [choice3, setChoice3] = useState("");
@@ -90,6 +91,15 @@ export default function TeacherDashboard( {currentUser, studentsContent}: Teache
 
  const lessonCategory = CATEGORIES.find((c) => c.id === lessonCategoryId)!;
  const exerciseCategory = CATEGORIES.find((c) => c.id === exerciseCategoryId)!;
+const [exerciseImageFile, setExerciseImageFile] = useState<File | null>(null);
+const [exerciseImagePreview, setExerciseImagePreview] = useState<string | null>(null);
+
+const handleExerciseImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  setExerciseImageFile(file);
+  setExerciseImagePreview(URL.createObjectURL(file));
+};
 
 const handleLessonCategoryChange = (catId: string) => {
   setLessonCategoryId(catId);
@@ -170,6 +180,10 @@ const handleAddExercise = async () => {
   if (!correctAnswer) return;
 
   setSavingExercise(true);
+   let imageUrl: string | null = null;
+  if (exerciseImageFile) {
+    imageUrl = await uploadNoteImage(exerciseImageFile); 
+  }
 
   const nextNumber =
     exercises.filter((e) => e.level === exerciseLevel).length + 1;
@@ -184,6 +198,7 @@ const handleAddExercise = async () => {
     answer_type: answerType,
     choices,
     correct_answer: correctAnswer,
+    image_url: imageUrl,
     hint1: hint1.trim() || null,
     hint2: hint2.trim() || null,
     hint3: hint3.trim() || null,
@@ -199,6 +214,8 @@ const handleAddExercise = async () => {
   setCorrectChoiceIndex(0);
   setNumericAnswer("");
   setHint1(""); setHint2(""); setHint3("");
+  setExerciseImageFile(null);    
+  setExerciseImagePreview(null); 
   setSavingExercise(false);
 };
 
@@ -358,6 +375,7 @@ const handleDeleteExercise = async (id: string) => {
       className="w-full border rounded-lg p-2"
       rows={2}
     />
+    
 
     <button
       onClick={handleAddLesson}
@@ -550,6 +568,10 @@ const handleDeleteExercise = async (id: string) => {
             className="w-full border rounded-lg p-2"
             rows={2}
           />
+          <input type="file" accept="image/*" onChange={handleExerciseImageChange} />
+{exerciseImagePreview && (
+  <img src={exerciseImagePreview} className="max-h-32 rounded-lg border" />
+)}
 
           <select
             value={answerType}
@@ -557,15 +579,16 @@ const handleDeleteExercise = async (id: string) => {
             className="border rounded-lg p-2 text-sm"
           >
             <option value="numeric">Talnasvar</option>
-            <option value="multiple_choice">Margval</option>
+            <option value="text">Textasvar</option>
+            <option value="multiple_choice">Fjölvals</option>
           </select>
 
-          {answerType === "numeric" ? (
+          {answerType !== "multiple_choice" ? (
             <input
               type="text"
               value={numericAnswer}
               onChange={(e) => setNumericAnswer(e.target.value)}
-              placeholder="Rétt svar (t.d. 42)"
+              placeholder={answerType === "numeric" ? "Rétt svar (t.d. 42)" : "Rétt svar (t.d. hluti deilt með heild)"}
               className="w-full border rounded-lg p-2"
             />
           ) : (
@@ -598,7 +621,7 @@ const handleDeleteExercise = async (id: string) => {
               type="text"
               value={hint1}
               onChange={(e) => setHint1(e.target.value)}
-              placeholder="Vísbending 1 (fyrsta ýtan)"
+              placeholder="Vísbending 1"
               className="w-full border rounded-lg p-2 text-sm"
             />
             <input
@@ -612,7 +635,7 @@ const handleDeleteExercise = async (id: string) => {
               type="text"
               value={hint3}
               onChange={(e) => setHint3(e.target.value)}
-              placeholder="Vísbending 3 (skýrust)"
+              placeholder="Vísbending 3"
               className="w-full border rounded-lg p-2 text-sm"
             />
           </div>

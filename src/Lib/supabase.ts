@@ -375,3 +375,27 @@ export async function deleteExerciseFromSupabase(id: string) {
     console.error(error);
   }
 }
+export async function loadProgressForStudent(studentId: string) {
+  const { data, error } = await supabase
+    .from("progress")
+    .select("level_key")
+    .eq("student_id", studentId);
+
+  if (error) {
+    console.error(error);
+    return [];
+  }
+  return data.map((row) => row.level_key);
+}
+
+export async function markLevelComplete(studentId: string, levelKey: string) {
+  const { error } = await supabase
+    .from("progress")
+    .insert({ student_id: studentId, level_key: levelKey })
+    .select();
+
+  // Villa vegna "unique" er í lagi (þýðir bara að þetta var þegar lokið) - hunsum hana
+  if (error && error.code !== "23505") {
+    console.error(error);
+  }
+}
