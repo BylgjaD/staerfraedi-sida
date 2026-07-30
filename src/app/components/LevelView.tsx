@@ -8,8 +8,9 @@ import {
   loadStudentNotes,
   saveNoteToSupabase,
   uploadNoteImage,
+  loadExercisesForSection,
+  loadLessonsForSection,
 } from "../../lib/supabase";
-import { loadLessonsForSection } from "../../lib/supabase";
 
 import {
   LEVEL_META,
@@ -30,6 +31,20 @@ interface NoteData {
   text: string | null;
   image_url: string | null;
   created_at: string;
+}
+interface ExerciseData {
+  id: string;
+  category_id: string;
+  section_id: string;
+  level: string;
+  question_number: number;
+  question_text: string;
+  answer_type: "multiple_choice" | "numeric";
+  choices: string[] | null;
+  correct_answer: string;
+  hint1: string | null;
+  hint2: string | null;
+  hint3: string | null;
 }
 function getYouTubeEmbedUrl(url: string): string | null {
   const match = url.match(
@@ -60,6 +75,31 @@ function LevelView({
   const [newImagePreview, setNewImagePreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [lessons, setLessons] = useState<any[]>([]);
+  const [exercises, setExercises] = useState<ExerciseData[]>([]);
+  const [studentAnswers, setStudentAnswers] = useState<Record<string, string>>({});
+  const [feedback, setFeedback] = useState<Record<string, "correct" | "incorrect" | null>>({});
+  const [hintsShown, setHintsShown] = useState<Record<string, number>>({});
+
+useEffect(() => {
+  loadExercisesForSection(category.id, section.id).then((all) =>
+    setExercises(all.filter((e: ExerciseData) => e.level === level))
+  );
+}, [category.id, section.id, level]);
+
+const handleCheckAnswer = (exercise: ExerciseData) => {
+  const studentAnswer = (studentAnswers[exercise.id] || "").trim().toLowerCase();
+  const correctAnswer = exercise.correct_answer.trim().toLowerCase();
+  const isCorrect = studentAnswer === correctAnswer;
+
+  setFeedback({ ...feedback, [exercise.id]: isCorrect ? "correct" : "incorrect" });
+};
+
+const handleShowHint = (exerciseId: string) => {
+  const current = hintsShown[exerciseId] || 0;
+  if (current < 3) {
+    setHintsShown({ ...hintsShown, [exerciseId]: current + 1 });
+  }
+};
 
   useEffect(() => {
   loadLessonsForSection(category.id, section.id).then((all) =>
@@ -118,6 +158,10 @@ function LevelView({
     setJustCompleted(true);
     setTimeout(onBack, 1200);
   };
+  const allExercisesCorrect =      
+    exercises.length > 0 && exercises.every((ex) => feedback[ex.id] === "correct");
+  const canComplete = exercises.length === 0 || allExercisesCorrect;
+
    return (
     <div className="min-h-screen bg-background" style={{ fontFamily: "'Outfit', sans-serif" }}>
        <header className="sticky top-0 z-20 bg-card border-b border-border">
@@ -241,45 +285,109 @@ function LevelView({
           <BookOpen size={18} style={{ color: category.accentColor }} />
           <span className="font-semibold text-sm">Verkefni</span>
         </div>
-        <div className="px-5 py-8 text-center space-y-4">
-          <div className="text-4xl">📐</div>
-          <div>
-            <div className="font-semibold mb-2" style={{ color: "#1e3a5f" }}>
-              {section.name} — {meta.label} stig
-            </div>
-            <p className="text-sm text-muted-foreground max-w-sm mx-auto" style={{ fontFamily: "'Inter', sans-serif" }}>
-              Hér koma verkefni á {meta.label.toLowerCase()} stigi fyrir {section.name.toLowerCase()}.
-              Leysðu öll verkefnin til að ljúka þessu stigi og opna næsta.
-            </p>
-          </div>
-          <div className="grid grid-cols-3 gap-2 mt-4 max-w-xs mx-auto">
-            {[1, 2, 3, 4, 5, 6].map((n) => (
-              <div key={n} className="h-14 rounded-lg border border-border bg-muted/30 flex items-center justify-center text-xs text-muted-foreground">
-                {n}. spurning
-              </div>
-            ))}
-          </div>
+        
+        <div className="px-5 py-6 space-y-6">
+  {exercises.length === 0 && (
+    <p className="text-sm text-muted-foreground text-center">
+      Engin dæmi ennþá fyrir þetta stig.
+    </p>
+  )}
+
+  {exercises.map((exercise) => {
+    const shownHints = hintsShown[exercise.id] || 0;
+    const hints = [exercise.hint1, exercise.hint2, exercise.hint3].filter(Boolean);
+    const fb = feedback[exercise.id];
+
+    return (
+      <div key={exercise.id} className="border rounded-xl p-4">
+        <div className="text-xs text-muted-foreground mb-1">
+          Dæmi #{exercise.question_number}
         </div>
-      </div>
+        <p className="font-medium mb-3">{exercise.question_text}</p>
+
+      {exercise.answer_type === "numeric" ? (
+  <input
+    type="text"
+    value={studentAnswers[exercise.id] || ""}
+    onChange={(e) =>
+      setStudentAnswers({ ...studentAnswers, [exercise.id]: e.target.value })
+    }
+    placeholder="Svarið þitt"
+    className="w-full border rounded-lg p-2 text-sm mb-2"
+  />
+) : (
+  <div className="space-y-2 mb-2">
+    {exercise.choices?.map((choice, i) => (
+      <label key={i} className="flex items-center gap-2 text-sm">
+        <input
+          type="radio"
+          name={`exercise-${exercise.id}`}
+          checked={studentAnswers[exercise.id] === choice}
+          onChange={() =>
+            setStudentAnswers({ ...studentAnswers, [exercise.id]: choice })
+          }
+        />
+        {choice}
+      </label>
+    ))}
+  </div>
+)}
+
+<div className="flex items-center gap-2 flex-wrap">
+  <button
+    onClick={() => handleCheckAnswer(exercise)}
+    className="px-3 py-1.5 rounded-lg text-sm text-white"
+    style={{ background: meta.hex }}
+  >
+    Athuga svar
+  </button>
+
+  {shownHints < 3 && (
+    <button
+      onClick={() => handleShowHint(exercise.id)}
+      className="px-3 py-1.5 rounded-lg border text-sm"
+    >
+      💡 Fá vísbendingu
+    </button>
+  )}
+</div> 
+
+    {fb === "incorrect" && (
+      <p className="text-red-600 text-sm font-medium mt-2">Ekki alveg — prófaðu aftur.</p>
+    )}
+        </div>
+      );
+    })}
+  </div>
 
       {isCompleted || justCompleted ? (
-        <div className="flex items-center justify-center gap-2 py-4 text-emerald-600 font-semibold">
-          <CheckCircle2 size={20} />
-          {justCompleted ? "Frábærlega gert! Hleður..." : "Þetta stig er þegar lokið"}
-        </div>
-      ) : (
-        <button onClick={handleComplete}
-          className="w-full py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 hover:opacity-90 active:scale-98 text-white shadow-sm"
-          style={{ background: `linear-gradient(135deg, ${meta.hex}, ${meta.hex}cc)` }}>
-          Ljúka stigi {level} · {meta.label}
-        </button>
-      )}
+  <div className="flex items-center justify-center gap-2 py-4 text-emerald-600 font-semibold">
+    <CheckCircle2 size={20} />
+    {justCompleted ? "Frábærlega gert! Hleður..." : "Þetta stig er þegar lokið"}
+  </div>
+) : (
+  <div>
+    <button
+      onClick={handleComplete}
+      disabled={!canComplete}
+      className="w-full py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 hover:opacity-90 active:scale-98 text-white shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
+      style={{ background: `linear-gradient(135deg, ${meta.hex}, ${meta.hex}cc)` }}
+    >
+      Ljúka stigi {level} · {meta.label}
+    </button>
+    {exercises.length > 0 && !allExercisesCorrect && (
+      <p className="text-xs text-muted-foreground text-center mt-2">
+        Leystu öll dæmin rétt til að geta lokið þessu stigi.
+      </p>
+    )}
+  </div>
+)}
+
+      </div>
     </div>
-
   </div>
-</main>
-
-  </div>
+  </main>
+</div>
   );
 }
 export default LevelView;

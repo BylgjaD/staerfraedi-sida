@@ -337,3 +337,41 @@ export async function loadLessonsForSection(categoryId: string, sectionId: strin
   }
   return data;
 }
+export async function loadExercisesForSection(categoryId: string, sectionId: string) {
+  const { data, error } = await supabase
+    .from("exercises")
+    .select("*")
+    .eq("category_id", categoryId)
+    .eq("section_id", sectionId)
+    .order("question_number", { ascending: true });
+
+  if (error) {
+    console.error(error);
+    return [];
+  }
+  return data;
+}
+
+export async function saveExerciseToSupabase(exercise: any) {
+  const { data, error } = await supabase
+    .from("exercises")
+    .insert([exercise])
+    .select();
+
+  if (error) {
+    console.error("SUPABASE ERROR:", error);
+    alert(error.message);
+  }
+  return data;
+}
+
+export async function deleteExerciseFromSupabase(id: string) {
+  const { error } = await supabase
+    .from("exercises")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    console.error(error);
+  }
+}

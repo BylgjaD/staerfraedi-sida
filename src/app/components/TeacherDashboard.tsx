@@ -13,6 +13,9 @@ import {
   loadLessonsForTeacher,   
   saveLessonToSupabase,    
   deleteLessonFromSupabase,
+  loadExercisesForSection,
+  saveExerciseToSupabase,
+  deleteExerciseFromSupabase,
 } from "../../lib/supabase";
 
 interface TeacherDashboardProps {
@@ -30,6 +33,22 @@ interface TeacherDashboardProps {
   image_url: string | null;
   created_at: string;
 }
+interface ExerciseData {
+  id: string;
+  teacher_email: string;
+  category_id: string;
+  section_id: string;
+  level: string;
+  question_number: number;
+  question_text: string;
+  answer_type: "multiple_choice" | "numeric";
+  choices: string[] | null;
+  correct_answer: string;
+  hint1: string | null;
+  hint2: string | null;
+  hint3: string | null;
+  created_at: string;
+}
 
 export default function TeacherDashboard( {currentUser, studentsContent}: TeacherDashboardProps) {
   
@@ -43,21 +62,44 @@ export default function TeacherDashboard( {currentUser, studentsContent}: Teache
   const [selectedSectionId, setSelectedSectionId] = useState(CATEGORIES[0].sections[0].id);
   const [selectedLevel, setSelectedLevel] = useState<string>("");
   const [lessons, setLessons] = useState<LessonData[]>([]);
-const [newLessonTitle, setNewLessonTitle] = useState("");
-const [newLessonUrl, setNewLessonUrl] = useState("");
-const [newLessonDescription, setNewLessonDescription] = useState("");
-const [savingLesson, setSavingLesson] = useState(false);
+ const [newLessonTitle, setNewLessonTitle] = useState("");
+ const [newLessonUrl, setNewLessonUrl] = useState("");
+ const [newLessonDescription, setNewLessonDescription] = useState("");
+ const [savingLesson, setSavingLesson] = useState(false);
 
-const [lessonCategoryId, setLessonCategoryId] = useState(CATEGORIES[0].id);
-const [lessonSectionId, setLessonSectionId] = useState(CATEGORIES[0].sections[0].id);
-const [lessonLevel, setLessonLevel] = useState("");
+ const [lessonCategoryId, setLessonCategoryId] = useState(CATEGORIES[0].id);
+ const [lessonSectionId, setLessonSectionId] = useState(CATEGORIES[0].sections[0].id);
+ const [lessonLevel, setLessonLevel] = useState("");
+ const [exercises, setExercises] = useState<ExerciseData[]>([]);
+ const [exerciseCategoryId, setExerciseCategoryId] = useState(CATEGORIES[0].id);
+ const [exerciseSectionId, setExerciseSectionId] = useState(CATEGORIES[0].sections[0].id);
+ const [exerciseLevel, setExerciseLevel] = useState<string>(LEVELS[0]);
 
-const lessonCategory = CATEGORIES.find((c) => c.id === lessonCategoryId)!;
+ const [questionText, setQuestionText] = useState("");
+ const [answerType, setAnswerType] = useState<"multiple_choice" | "numeric">("numeric");
+ const [choice1, setChoice1] = useState("");
+ const [choice2, setChoice2] = useState("");
+ const [choice3, setChoice3] = useState("");
+ const [choice4, setChoice4] = useState("");
+ const [correctChoiceIndex, setCorrectChoiceIndex] = useState(0);
+ const [numericAnswer, setNumericAnswer] = useState("");
+ const [hint1, setHint1] = useState("");
+ const [hint2, setHint2] = useState("");
+ const [hint3, setHint3] = useState("");
+ const [savingExercise, setSavingExercise] = useState(false);
+
+ const lessonCategory = CATEGORIES.find((c) => c.id === lessonCategoryId)!;
+ const exerciseCategory = CATEGORIES.find((c) => c.id === exerciseCategoryId)!;
 
 const handleLessonCategoryChange = (catId: string) => {
   setLessonCategoryId(catId);
   const cat = CATEGORIES.find((c) => c.id === catId)!;
   setLessonSectionId(cat.sections[0].id);
+};
+const handleExerciseCategoryChange = (catId: string) => {
+  setExerciseCategoryId(catId);
+  const cat = CATEGORIES.find((c) => c.id === catId)!;
+  setExerciseSectionId(cat.sections[0].id);
 };
 
 useEffect(() => {
@@ -109,6 +151,61 @@ const handleDeleteLesson = async (id: string) => {
     const cat = CATEGORIES.find((c) => c.id === catId)!;
     setSelectedSectionId(cat.sections[0].id);
   };
+
+  useEffect(() => {
+  if (activeTab === "exercises") {
+    loadExercisesForSection(exerciseCategoryId, exerciseSectionId).then(setExercises);
+  }
+}, [activeTab, exerciseCategoryId, exerciseSectionId]);
+
+const handleAddExercise = async () => {
+  if (!questionText.trim()) return;
+
+  const choices = answerType === "multiple_choice" ? [choice1, choice2, choice3, choice4] : null;
+  const correctAnswer =
+    answerType === "multiple_choice"
+      ? [choice1, choice2, choice3, choice4][correctChoiceIndex]
+      : numericAnswer.trim();
+
+  if (!correctAnswer) return;
+
+  setSavingExercise(true);
+
+  const nextNumber =
+    exercises.filter((e) => e.level === exerciseLevel).length + 1;
+
+  const newExercise = {
+    teacher_email: currentUser.email,
+    category_id: exerciseCategoryId,
+    section_id: exerciseSectionId,
+    level: exerciseLevel,
+    question_number: nextNumber,
+    question_text: questionText.trim(),
+    answer_type: answerType,
+    choices,
+    correct_answer: correctAnswer,
+    hint1: hint1.trim() || null,
+    hint2: hint2.trim() || null,
+    hint3: hint3.trim() || null,
+  };
+
+  const data = await saveExerciseToSupabase(newExercise);
+  if (data && data[0]) {
+    setExercises([...exercises, data[0]]);
+  }
+
+  setQuestionText("");
+  setChoice1(""); setChoice2(""); setChoice3(""); setChoice4("");
+  setCorrectChoiceIndex(0);
+  setNumericAnswer("");
+  setHint1(""); setHint2(""); setHint3("");
+  setSavingExercise(false);
+};
+
+const handleDeleteExercise = async (id: string) => {
+  await deleteExerciseFromSupabase(id);
+  setExercises(exercises.filter((e) => e.id !== id));
+};
 
  const hour = new Date().getHours();
   let greeting = "Góðan daginn";
@@ -175,6 +272,7 @@ const handleDeleteLesson = async (id: string) => {
           { key: "overview", label: "Yfirlit" },
           { key: "lessons", label: "Kennslustundir" },
           { key: "notes", label: "Glósur" },
+          { key: "exercises", label: "Dæmi" },
           { key: "students", label: "Nemendur" },
         ].map((tab) => (
           <button
@@ -405,12 +503,158 @@ const handleDeleteLesson = async (id: string) => {
 
       {activeTab === "students" && (
         <div>
-      {studentsContent}
-    </div>
-  )}
+          {studentsContent}
+        </div>
+      )}
+
+      {activeTab === "exercises" && (
+        <div className="bg-white p-6 rounded-2xl border shadow-sm space-y-4">
+          <h3 className="text-lg font-bold mb-2">Dæmi</h3>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <select
+              value={exerciseCategoryId}
+              onChange={(e) => handleExerciseCategoryChange(e.target.value)}
+              className="border rounded-lg p-2 text-sm"
+            >
+              {CATEGORIES.map((cat) => (
+                <option key={cat.id} value={cat.id}>{cat.name}</option>
+              ))}
+            </select>
+
+            <select
+              value={exerciseSectionId}
+              onChange={(e) => setExerciseSectionId(e.target.value)}
+              className="border rounded-lg p-2 text-sm"
+            >
+              {exerciseCategory.sections.map((sec) => (
+                <option key={sec.id} value={sec.id}>{sec.name}</option>
+              ))}
+            </select>
+
+            <select
+              value={exerciseLevel}
+              onChange={(e) => setExerciseLevel(e.target.value)}
+              className="border rounded-lg p-2 text-sm"
+            >
+              {LEVELS.map((l) => (
+                <option key={l} value={l}>{LEVEL_META[l].label}</option>
+              ))}
+            </select>
+          </div>
+
+          <textarea
+            value={questionText}
+            onChange={(e) => setQuestionText(e.target.value)}
+            placeholder="Spurningatexti"
+            className="w-full border rounded-lg p-2"
+            rows={2}
+          />
+
+          <select
+            value={answerType}
+            onChange={(e) => setAnswerType(e.target.value as "multiple_choice" | "numeric")}
+            className="border rounded-lg p-2 text-sm"
+          >
+            <option value="numeric">Talnasvar</option>
+            <option value="multiple_choice">Margval</option>
+          </select>
+
+          {answerType === "numeric" ? (
+            <input
+              type="text"
+              value={numericAnswer}
+              onChange={(e) => setNumericAnswer(e.target.value)}
+              placeholder="Rétt svar (t.d. 42)"
+              className="w-full border rounded-lg p-2"
+            />
+          ) : (
+            <div className="space-y-2">
+              {[choice1, choice2, choice3, choice4].map((val, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    checked={correctChoiceIndex === i}
+                    onChange={() => setCorrectChoiceIndex(i)}
+                  />
+                  <input
+                    type="text"
+                    value={val}
+                    onChange={(e) => {
+                      const setters = [setChoice1, setChoice2, setChoice3, setChoice4];
+                      setters[i](e.target.value);
+                    }}
+                    placeholder={`Svarmöguleiki ${i + 1}`}
+                    className="flex-1 border rounded-lg p-2 text-sm"
+                  />
+                </div>
+              ))}
+              <p className="text-xs text-muted-foreground">Merktu réttan valmöguleika með punkti til vinstri</p>
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <input
+              type="text"
+              value={hint1}
+              onChange={(e) => setHint1(e.target.value)}
+              placeholder="Vísbending 1 (fyrsta ýtan)"
+              className="w-full border rounded-lg p-2 text-sm"
+            />
+            <input
+              type="text"
+              value={hint2}
+              onChange={(e) => setHint2(e.target.value)}
+              placeholder="Vísbending 2"
+              className="w-full border rounded-lg p-2 text-sm"
+            />
+            <input
+              type="text"
+              value={hint3}
+              onChange={(e) => setHint3(e.target.value)}
+              placeholder="Vísbending 3 (skýrust)"
+              className="w-full border rounded-lg p-2 text-sm"
+            />
+          </div>
+
+          <button
+            onClick={handleAddExercise}
+            disabled={savingExercise}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg disabled:opacity-50"
+          >
+            {savingExercise ? "Vistar..." : "Vista dæmi"}
+          </button>
+
+          <div className="space-y-3 mt-6">
+            {exercises.length === 0 && (
+              <p className="text-muted-foreground text-sm">Engin dæmi ennþá fyrir þennan hluta.</p>
+            )}
+            {exercises.map((ex) => (
+              <div key={ex.id} className="border rounded-lg p-3 flex justify-between items-start gap-3">
+                <div>
+                  <div className="text-xs text-muted-foreground mb-1">
+                    {LEVEL_META[ex.level as keyof typeof LEVEL_META]?.label} · Dæmi #{ex.question_number}
+                  </div>
+                  <div className="text-sm">{ex.question_text}</div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    Svar: {ex.correct_answer}
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleDeleteExercise(ex.id)}
+                  className="text-gray-400 hover:text-red-600 transition-colors shrink-0"
+                >
+                  <Trash2 size={18} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
 interface LessonData {
   id: string;
   teacher_email: string;
@@ -430,3 +674,4 @@ function getYouTubeEmbedUrl(url: string): string | null {
   );
   return match ? `https://www.youtube.com/embed/${match[1]}` : null;
 }
+
