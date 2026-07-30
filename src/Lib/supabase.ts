@@ -285,3 +285,40 @@ export async function assignStudentToTeacher(
     throw error;
   }
 }
+export async function loadLessonsForTeacher(teacherEmail: string) {
+  const { data, error } = await supabase
+    .from("lessons")
+    .select("*")
+    .eq("teacher_email", teacherEmail)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error(error);
+    return [];
+  }
+  return data;
+}
+
+export async function saveLessonToSupabase(lesson: any) {
+  const { data, error } = await supabase
+    .from("lessons")
+    .insert([lesson])
+    .select();
+
+  if (error) {
+    console.error("SUPABASE ERROR:", error);
+    alert(error.message);
+  }
+  return data;
+}
+
+export async function deleteLessonFromSupabase(id: string) {
+  const { error } = await supabase
+    .from("lessons")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    console.error(error);
+  }
+}

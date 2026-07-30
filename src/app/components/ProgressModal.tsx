@@ -29,13 +29,21 @@ export default function ProgressModal({ student, onClose }: ProgressModalProps) 
         <div className="px-6 py-4 space-y-4">
           {completed.length === 0 && (
             <p className="text-sm text-muted-foreground">
-              Engin framvinda skráð ennþá fyrir þennan nemanda.
+              Engin verkefni hjá þessum nemanda
             </p>
           )}
+          <h3 className="font-semibold">
+    Lokin verkefni
+</h3>
+{completed.map((lesson) => (
+    <div key={lesson}>
+        ✅ {lesson}
+    </div>
+))}
 
           {CATEGORIES.map((cat) => {
             const { done, total } = categoryProgress(completed, cat.id);
-            if (done === 0) return null; // sleppa köflum sem ekkert er byrjað í
+            if (done === 0) return null;
 
             return (
               <div key={cat.id} className="border rounded-lg p-3">

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import StatCard from "./StatCard"; 
 import PageHeader from "./PageHeader";
 import { Users, Activity, AlertTriangle, Flag, Trash2 } from "lucide-react";
+import { Video } from "lucide-react";
 import { UserData } from "../../lib/types";
 import { CATEGORIES, LEVELS, LEVEL_META } from "../../data/categories";
 import {
@@ -9,6 +10,9 @@ import {
   saveNoteToSupabase,
   deleteNoteFromSupabase,
   uploadNoteImage,
+  loadLessonsForTeacher,   
+  saveLessonToSupabase,    
+  deleteLessonFromSupabase,
 } from "../../lib/supabase";
 
 interface TeacherDashboardProps {
@@ -38,6 +42,66 @@ export default function TeacherDashboard( {currentUser, studentsContent}: Teache
   const [selectedCategoryId, setSelectedCategoryId] = useState(CATEGORIES[0].id);
   const [selectedSectionId, setSelectedSectionId] = useState(CATEGORIES[0].sections[0].id);
   const [selectedLevel, setSelectedLevel] = useState<string>("");
+  const [lessons, setLessons] = useState<LessonData[]>([]);
+const [newLessonTitle, setNewLessonTitle] = useState("");
+const [newLessonUrl, setNewLessonUrl] = useState("");
+const [newLessonDescription, setNewLessonDescription] = useState("");
+const [savingLesson, setSavingLesson] = useState(false);
+
+const [lessonCategoryId, setLessonCategoryId] = useState(CATEGORIES[0].id);
+const [lessonSectionId, setLessonSectionId] = useState(CATEGORIES[0].sections[0].id);
+const [lessonLevel, setLessonLevel] = useState("");
+
+const lessonCategory = CATEGORIES.find((c) => c.id === lessonCategoryId)!;
+
+const handleLessonCategoryChange = (catId: string) => {
+  setLessonCategoryId(catId);
+  const cat = CATEGORIES.find((c) => c.id === catId)!;
+  setLessonSectionId(cat.sections[0].id);
+};
+
+useEffect(() => {
+  if (activeTab === "lessons") {
+    loadLessonsForTeacher(currentUser.email).then(setLessons);
+  }
+}, [activeTab, currentUser.email]);
+
+const handleAddLesson = async () => {
+  if (!newLessonTitle.trim() || !newLessonUrl.trim()) return;
+
+  const embedUrl = getYouTubeEmbedUrl(newLessonUrl.trim());
+  if (!embedUrl) {
+    alert("Þetta lítur ekki út eins og gildur YouTube-hlekkur");
+    return;
+  }
+
+  setSavingLesson(true);
+
+  const newLesson = {
+    teacher_email: currentUser.email,
+    category_id: lessonCategoryId,
+    section_id: lessonSectionId,
+    level: lessonLevel || null,
+    title: newLessonTitle.trim(),
+    video_url: newLessonUrl.trim(),
+    description: newLessonDescription.trim() || null,
+  };
+
+  const data = await saveLessonToSupabase(newLesson);
+  if (data && data[0]) {
+    setLessons([data[0], ...lessons]);
+  }
+
+  setNewLessonTitle("");
+  setNewLessonUrl("");
+  setNewLessonDescription("");
+  setSavingLesson(false);
+};
+
+const handleDeleteLesson = async (id: string) => {
+  await deleteLessonFromSupabase(id);
+  setLessons(lessons.filter((l) => l.id !== id));
+};
 
   const selectedCategory = CATEGORIES.find((c) => c.id === selectedCategoryId)!;
  const handleCategoryChange = (catId: string) => {
@@ -137,11 +201,118 @@ export default function TeacherDashboard( {currentUser, studentsContent}: Teache
       )}
 
       {activeTab === "lessons" && (
-        <div className="bg-white p-6 rounded-2xl border shadow-sm">
-          <h3 className="text-lg font-bold mb-2">Kennslustundir</h3>
-          <p className="text-muted-foreground text-sm">Hérna koma kennslustundir.</p>
-        </div>
+  <div className="bg-white p-6 rounded-2xl border shadow-sm space-y-4">
+    <h3 className="text-lg font-bold mb-2">Kennslustundir</h3>
+
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <select
+        value={lessonCategoryId}
+        onChange={(e) => handleLessonCategoryChange(e.target.value)}
+        className="border rounded-lg p-2 text-sm"
+      >
+        {CATEGORIES.map((cat) => (
+          <option key={cat.id} value={cat.id}>{cat.name}</option>
+        ))}
+      </select>
+
+      <select
+        value={lessonSectionId}
+        onChange={(e) => setLessonSectionId(e.target.value)}
+        className="border rounded-lg p-2 text-sm"
+      >
+        {lessonCategory.sections.map((sec) => (
+          <option key={sec.id} value={sec.id}>{sec.name}</option>
+        ))}
+      </select>
+
+      <select
+        value={lessonLevel}
+        onChange={(e) => setLessonLevel(e.target.value)}
+        className="border rounded-lg p-2 text-sm"
+      >
+        <option value=""> Erfiðleikastig </option>
+        {LEVELS.map((l) => (
+          <option key={l} value={l}>{LEVEL_META[l].label}</option>
+        ))}
+      </select>
+    </div>
+
+    <input
+      type="text"
+      value={newLessonTitle}
+      onChange={(e) => setNewLessonTitle(e.target.value)}
+      placeholder="Titill kennslustundar"
+      className="w-full border rounded-lg p-2"
+    />
+
+    <input
+      type="text"
+      value={newLessonUrl}
+      onChange={(e) => setNewLessonUrl(e.target.value)}
+      placeholder="YouTube hlekkur (t.d. https://youtu.be/...)"
+      className="w-full border rounded-lg p-2"
+    />
+
+    <textarea
+      value={newLessonDescription}
+      onChange={(e) => setNewLessonDescription(e.target.value)}
+      placeholder="Stutt lýsing (valfrjálst)"
+      className="w-full border rounded-lg p-2"
+      rows={2}
+    />
+
+    <button
+      onClick={handleAddLesson}
+      disabled={savingLesson}
+      className="px-4 py-2 bg-blue-600 text-white rounded-lg disabled:opacity-50"
+    >
+      {savingLesson ? "Vistar..." : "Vista kennslustund"}
+    </button>
+
+    <div className="space-y-4 mt-6">
+      {lessons.length === 0 && (
+        <p className="text-muted-foreground text-sm">Engar kennslustundir ennþá.</p>
       )}
+      {lessons.map((lesson) => {
+        const cat = CATEGORIES.find((c) => c.id === lesson.category_id);
+        const sec = cat?.sections.find((s) => s.id === lesson.section_id);
+        const embedUrl = getYouTubeEmbedUrl(lesson.video_url);
+
+        return (
+          <div key={lesson.id} className="border rounded-lg p-3">
+            <div className="flex justify-between items-start mb-2">
+              <div>
+                <div className="text-xs text-muted-foreground mb-1">
+                  {cat?.name} {sec ? `· ${sec.name}` : ""} {lesson.level ? `· ${LEVEL_META[lesson.level as keyof typeof LEVEL_META]?.label}` : ""}
+                </div>
+                <div className="font-semibold text-sm">{lesson.title}</div>
+                {lesson.description && (
+                  <p className="text-sm text-muted-foreground mt-1">{lesson.description}</p>
+                )}
+              </div>
+              <button
+                onClick={() => handleDeleteLesson(lesson.id)}
+                className="text-gray-400 hover:text-red-600 transition-colors shrink-0"
+              >
+                <Trash2 size={18} />
+              </button>
+            </div>
+            {embedUrl && (
+              <div className="aspect-video mt-2">
+                <iframe
+                  src={embedUrl}
+                  className="w-full h-full rounded-lg"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  </div>
+)}
 
       {activeTab === "notes" && (
         <div className="bg-white p-6 rounded-2xl border shadow-sm space-y-4">
@@ -240,4 +411,22 @@ export default function TeacherDashboard( {currentUser, studentsContent}: Teache
     </div>
   );
 }
+interface LessonData {
+  id: string;
+  teacher_email: string;
+  category_id: string | null;
+  section_id: string | null;
+  level: string | null;
+  title: string;
+  video_url: string;
+  description: string | null;
+  created_at: string;
+}
 
+
+function getYouTubeEmbedUrl(url: string): string | null {
+  const match = url.match(
+    /(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/
+  );
+  return match ? `https://www.youtube.com/embed/${match[1]}` : null;
+}
