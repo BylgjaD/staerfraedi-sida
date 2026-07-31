@@ -33,6 +33,17 @@ interface TeacherDashboardProps {
   image_url: string | null;
   created_at: string;
 }
+interface SubpartData {
+  label: string;
+  question_text: string;
+  answer_type: "multiple_choice" | "numeric" | "text";
+  choices: string[] | null;
+  correct_answer: string;
+  hint1: string | null;
+  hint2: string | null;
+  hint3: string | null;
+}
+
 interface ExerciseData {
   id: string;
   teacher_email: string;
@@ -47,8 +58,9 @@ interface ExerciseData {
   hint1: string | null;
   hint2: string | null;
   hint3: string | null;
-  created_at: string;
   image_url: string | null;
+  created_at: string;
+  subparts: SubpartData[] | null;
 }
 
 export default function TeacherDashboard( {currentUser, studentsContent}: TeacherDashboardProps) {
@@ -91,8 +103,38 @@ export default function TeacherDashboard( {currentUser, studentsContent}: Teache
 
  const lessonCategory = CATEGORIES.find((c) => c.id === lessonCategoryId)!;
  const exerciseCategory = CATEGORIES.find((c) => c.id === exerciseCategoryId)!;
-const [exerciseImageFile, setExerciseImageFile] = useState<File | null>(null);
-const [exerciseImagePreview, setExerciseImagePreview] = useState<string | null>(null);
+ const [exerciseImageFile, setExerciseImageFile] = useState<File | null>(null);
+ const [exerciseImagePreview, setExerciseImagePreview] = useState<string | null>(null);
+const [subparts, setSubparts] = useState<SubpartData[]>([]);
+
+const addSubpart = () => {
+  const nextLabel = String.fromCharCode(97 + subparts.length); // a, b, c...
+  setSubparts([
+    ...subparts,
+    {
+      label: nextLabel,
+      question_text: "",
+      answer_type: "numeric",
+      choices: null,
+      correct_answer: "",
+      hint1: null,
+      hint2: null,
+      hint3: null,
+    },
+  ]);
+};
+
+const updateSubpart = (index: number, changes: Partial<SubpartData>) => {
+  setSubparts(subparts.map((sp, i) => (i === index ? { ...sp, ...changes } : sp)));
+};
+
+const removeSubpart = (index: number) => {
+  setSubparts(
+    subparts
+      .filter((_, i) => i !== index)
+      .map((sp, i) => ({ ...sp, label: String.fromCharCode(97 + i) })) // endurnúmera a,b,c...
+  );
+};
 
 const handleExerciseImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
   const file = e.target.files?.[0];
@@ -171,22 +213,28 @@ const handleDeleteLesson = async (id: string) => {
 const handleAddExercise = async () => {
   if (!questionText.trim()) return;
 
-  const choices = answerType === "multiple_choice" ? [choice1, choice2, choice3, choice4] : null;
-  const correctAnswer =
-    answerType === "multiple_choice"
-      ? [choice1, choice2, choice3, choice4][correctChoiceIndex]
-      : numericAnswer.trim();
-
-  if (!correctAnswer) return;
-
   setSavingExercise(true);
-   let imageUrl: string | null = null;
+
+  let imageUrl: string | null = null;
   if (exerciseImageFile) {
-    imageUrl = await uploadNoteImage(exerciseImageFile); 
+    imageUrl = await uploadNoteImage(exerciseImageFile);
   }
 
-  const nextNumber =
-    exercises.filter((e) => e.level === exerciseLevel).length + 1;
+  const nextNumber = exercises.filter((e) => e.level === exerciseLevel).length + 1;
+
+  const hasSubparts = subparts.length > 0;
+
+  const choices = !hasSubparts && answerType === "multiple_choice" ? [choice1, choice2, choice3, choice4] : null;
+  const correctAnswer = !hasSubparts
+    ? answerType === "multiple_choice"
+      ? [choice1, choice2, choice3, choice4][correctChoiceIndex]
+      : numericAnswer.trim()
+    : "";
+
+  if (!hasSubparts && !correctAnswer) {
+    setSavingExercise(false);
+    return;
+  }
 
   const newExercise = {
     teacher_email: currentUser.email,
@@ -202,6 +250,7 @@ const handleAddExercise = async () => {
     hint1: hint1.trim() || null,
     hint2: hint2.trim() || null,
     hint3: hint3.trim() || null,
+    subparts: hasSubparts ? subparts : null,
   };
 
   const data = await saveExerciseToSupabase(newExercise);
@@ -214,8 +263,9 @@ const handleAddExercise = async () => {
   setCorrectChoiceIndex(0);
   setNumericAnswer("");
   setHint1(""); setHint2(""); setHint3("");
-  setExerciseImageFile(null);    
-  setExerciseImagePreview(null); 
+  setExerciseImageFile(null);
+  setExerciseImagePreview(null);
+  setSubparts([]); // ← nýtt, hreinsa undirliði
   setSavingExercise(false);
 };
 
@@ -573,9 +623,119 @@ const handleDeleteExercise = async (id: string) => {
   <img src={exerciseImagePreview} className="max-h-32 rounded-lg border" />
 )}
 
+<div className="border-t pt-4 space-y-3">
+  <div className="flex items-center justify-between">
+    <span className="text-sm font-semibold">Undirliðir (valfrjálst)</span>
+    <button
+      onClick={addSubpart}
+      className="text-sm text-blue-600 hover:underline"
+    >
+      + Bæta við lið
+    </button>
+  </div>
+
+  {subparts.map((sp, i) => (
+    <div key={i} className="border rounded-lg p-3 space-y-2 bg-muted/20">
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-semibold">Liður {sp.label})</span>
+        <button
+          onClick={() => removeSubpart(i)}
+          className="text-red-600 text-sm hover:underline"
+        >
+          Fjarlægja
+        </button>
+      </div>
+
+      <input
+        type="text"
+        value={sp.question_text}
+        onChange={(e) => updateSubpart(i, { question_text: e.target.value })}
+        placeholder={`Spurningatexti fyrir lið ${sp.label})`}
+        className="w-full border rounded-lg p-2 text-sm"
+      />
+
+      <select
+        value={sp.answer_type}
+        onChange={(e) =>
+          updateSubpart(i, {
+            answer_type: e.target.value as SubpartData["answer_type"],
+            choices: e.target.value === "multiple_choice" ? ["", "", "", ""] : null,
+          })
+        }
+        className="border rounded-lg p-2 text-sm"
+      >
+        <option value="numeric">Talnasvar</option>
+        <option value="text">Textasvar</option>
+        <option value="multiple_choice">Margval</option>
+      </select>
+
+      {sp.answer_type === "multiple_choice" ? (
+        <div className="space-y-1">
+          {(sp.choices || ["", "", "", ""]).map((val, ci) => (
+            <div key={ci} className="flex items-center gap-2">
+              <input
+                type="radio"
+                checked={sp.correct_answer === val && val !== ""}
+                onChange={() => updateSubpart(i, { correct_answer: val })}
+              />
+              <input
+                type="text"
+                value={val}
+                onChange={(e) => {
+                  const newChoices = [...(sp.choices || ["", "", "", ""])];
+                  newChoices[ci] = e.target.value;
+                  updateSubpart(i, {
+                    choices: newChoices,
+                    correct_answer: sp.correct_answer === val ? e.target.value : sp.correct_answer,
+                  });
+                }}
+                placeholder={`Svarmöguleiki ${ci + 1}`}
+                className="flex-1 border rounded-lg p-1.5 text-sm"
+              />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <input
+          type="text"
+          value={sp.correct_answer}
+          onChange={(e) => updateSubpart(i, { correct_answer: e.target.value })}
+          placeholder="Rétt svar"
+          className="w-full border rounded-lg p-2 text-sm"
+        />
+      )}
+
+      
+      <input
+  type="text"
+  value={sp.hint1 || ""}
+  onChange={(e) => updateSubpart(i, { hint1: e.target.value || null })}
+  placeholder="Vísbending 1"
+  className="w-full border rounded-lg p-2 text-sm"
+/>
+<input
+  type="text"
+  value={sp.hint2 || ""}
+  onChange={(e) => updateSubpart(i, { hint2: e.target.value || null })}
+  placeholder="Vísbending 2"
+  className="w-full border rounded-lg p-2 text-sm"
+/>
+<input
+  type="text"
+  value={sp.hint3 || ""}
+  onChange={(e) => updateSubpart(i, { hint3: e.target.value || null })}
+  placeholder="Vísbending 3"
+  className="w-full border rounded-lg p-2 text-sm"
+/>
+    </div>
+  ))}
+
+</div>
+ {subparts.length === 0 && (
+   <>
           <select
             value={answerType}
-            onChange={(e) => setAnswerType(e.target.value as "multiple_choice" | "numeric")}
+            onChange={(e) => setAnswerType(e.target.value as "multiple_choice" | "numeric"| "text")}
             className="border rounded-lg p-2 text-sm"
           >
             <option value="numeric">Talnasvar</option>
@@ -614,8 +774,11 @@ const handleDeleteExercise = async (id: string) => {
               ))}
               <p className="text-xs text-muted-foreground">Merktu réttan valmöguleika með punkti til vinstri</p>
             </div>
+             )}
+             </>
           )}
 
+          {subparts.length === 0 && (
           <div className="space-y-2">
             <input
               type="text"
@@ -639,6 +802,7 @@ const handleDeleteExercise = async (id: string) => {
               className="w-full border rounded-lg p-2 text-sm"
             />
           </div>
+          )}
 
           <button
             onClick={handleAddExercise}
