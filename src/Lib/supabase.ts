@@ -399,3 +399,16 @@ export async function markLevelComplete(studentId: string, levelKey: string) {
     console.error(error);
   }
 }
+export async function updateExerciseInSupabase(id: string, exercise: any) {
+  const { data, error } = await supabase
+    .from("exercises")
+    .update(exercise)
+    .eq("id", id)
+    .select();
+
+  if (error) {
+    console.error(error);
+    alert(error.message);
+  }
+  return data;
+}

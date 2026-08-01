@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import StatCard from "./StatCard"; 
 import PageHeader from "./PageHeader";
-import { Users, Activity, AlertTriangle, Flag, Trash2 } from "lucide-react";
+import { Users, Activity, AlertTriangle, Flag, Trash2, ChevronDown, ChevronRight, Pencil } from "lucide-react";
 import { Video } from "lucide-react";
 import { UserData } from "../../lib/types";
 import { CATEGORIES, LEVELS, LEVEL_META } from "../../data/categories";
@@ -16,6 +16,7 @@ import {
   loadExercisesForSection,
   saveExerciseToSupabase,
   deleteExerciseFromSupabase,
+  updateExerciseInSupabase,
 } from "../../lib/supabase";
 
 interface TeacherDashboardProps {
@@ -100,12 +101,15 @@ export default function TeacherDashboard( {currentUser, studentsContent}: Teache
  const [hint2, setHint2] = useState("");
  const [hint3, setHint3] = useState("");
  const [savingExercise, setSavingExercise] = useState(false);
+const [editingExerciseId, setEditingExerciseId] = useState<string | null>(null);
+const [existingImageUrl, setExistingImageUrl] = useState<string | null>(null);
 
  const lessonCategory = CATEGORIES.find((c) => c.id === lessonCategoryId)!;
  const exerciseCategory = CATEGORIES.find((c) => c.id === exerciseCategoryId)!;
  const [exerciseImageFile, setExerciseImageFile] = useState<File | null>(null);
  const [exerciseImagePreview, setExerciseImagePreview] = useState<string | null>(null);
-const [subparts, setSubparts] = useState<SubpartData[]>([]);
+ const [expandedLevel, setExpandedLevel] = useState<string | null>(null);
+ const [subparts, setSubparts] = useState<SubpartData[]>([]);
 
 const addSubpart = () => {
   const nextLabel = String.fromCharCode(97 + subparts.length); // a, b, c...
@@ -152,6 +156,57 @@ const handleExerciseCategoryChange = (catId: string) => {
   setExerciseCategoryId(catId);
   const cat = CATEGORIES.find((c) => c.id === catId)!;
   setExerciseSectionId(cat.sections[0].id);
+};
+
+const handleStartEditExercise = (ex: ExerciseData) => {
+  setEditingExerciseId(ex.id);
+  setExerciseCategoryId(ex.category_id);
+  setExerciseSectionId(ex.section_id);
+  setExerciseLevel(ex.level);
+  setQuestionText(ex.question_text);
+  setExistingImageUrl(ex.image_url);
+  setExerciseImageFile(null);
+  setExerciseImagePreview(null);
+
+  if (ex.subparts && ex.subparts.length > 0) {
+    setSubparts(ex.subparts);
+    setAnswerType("numeric");
+    setNumericAnswer("");
+    setChoice1(""); setChoice2(""); setChoice3(""); setChoice4("");
+    setCorrectChoiceIndex(0);
+  } else {
+    setSubparts([]);
+    setAnswerType(ex.answer_type);
+    if (ex.answer_type === "multiple_choice") {
+      const c = ex.choices || ["", "", "", ""];
+      setChoice1(c[0] || ""); setChoice2(c[1] || ""); setChoice3(c[2] || ""); setChoice4(c[3] || "");
+      setCorrectChoiceIndex(c.indexOf(ex.correct_answer));
+      setNumericAnswer("");
+    } else {
+      setNumericAnswer(ex.correct_answer);
+      setChoice1(""); setChoice2(""); setChoice3(""); setChoice4("");
+      setCorrectChoiceIndex(0);
+    }
+  }
+
+  setHint1(ex.hint1 || "");
+  setHint2(ex.hint2 || "");
+  setHint3(ex.hint3 || "");
+
+  window.scrollTo({ top: 0, behavior: "smooth" });
+};
+
+const cancelEditExercise = () => {
+  setEditingExerciseId(null);
+  setExistingImageUrl(null);
+  setQuestionText("");
+  setChoice1(""); setChoice2(""); setChoice3(""); setChoice4("");
+  setCorrectChoiceIndex(0);
+  setNumericAnswer("");
+  setHint1(""); setHint2(""); setHint3("");
+  setExerciseImageFile(null);
+  setExerciseImagePreview(null);
+  setSubparts([]);
 };
 
 useEffect(() => {
@@ -210,17 +265,15 @@ const handleDeleteLesson = async (id: string) => {
   }
 }, [activeTab, exerciseCategoryId, exerciseSectionId]);
 
-const handleAddExercise = async () => {
+const handleSaveExercise = async () => {
   if (!questionText.trim()) return;
 
   setSavingExercise(true);
 
-  let imageUrl: string | null = null;
+  let imageUrl: string | null = existingImageUrl;
   if (exerciseImageFile) {
     imageUrl = await uploadNoteImage(exerciseImageFile);
   }
-
-  const nextNumber = exercises.filter((e) => e.level === exerciseLevel).length + 1;
 
   const hasSubparts = subparts.length > 0;
 
@@ -236,12 +289,10 @@ const handleAddExercise = async () => {
     return;
   }
 
-  const newExercise = {
-    teacher_email: currentUser.email,
+  const exercisePayload = {
     category_id: exerciseCategoryId,
     section_id: exerciseSectionId,
     level: exerciseLevel,
-    question_number: nextNumber,
     question_text: questionText.trim(),
     answer_type: answerType,
     choices,
@@ -253,19 +304,25 @@ const handleAddExercise = async () => {
     subparts: hasSubparts ? subparts : null,
   };
 
-  const data = await saveExerciseToSupabase(newExercise);
-  if (data && data[0]) {
-    setExercises([...exercises, data[0]]);
+  if (editingExerciseId) {
+    const data = await updateExerciseInSupabase(editingExerciseId, exercisePayload);
+    if (data && data[0]) {
+      setExercises(exercises.map((e) => (e.id === editingExerciseId ? data[0] : e)));
+    }
+    cancelEditExercise();
+  } else {
+    const nextNumber = exercises.filter((e) => e.level === exerciseLevel).length + 1;
+    const data = await saveExerciseToSupabase({
+      ...exercisePayload,
+      teacher_email: currentUser.email,
+      question_number: nextNumber,
+    });
+    if (data && data[0]) {
+      setExercises([...exercises, data[0]]);
+    }
+    cancelEditExercise();
   }
 
-  setQuestionText("");
-  setChoice1(""); setChoice2(""); setChoice3(""); setChoice4("");
-  setCorrectChoiceIndex(0);
-  setNumericAnswer("");
-  setHint1(""); setHint2(""); setHint3("");
-  setExerciseImageFile(null);
-  setExerciseImagePreview(null);
-  setSubparts([]); // ← nýtt, hreinsa undirliði
   setSavingExercise(false);
 };
 
@@ -619,8 +676,11 @@ const handleDeleteExercise = async (id: string) => {
             rows={2}
           />
           <input type="file" accept="image/*" onChange={handleExerciseImageChange} />
-{exerciseImagePreview && (
-  <img src={exerciseImagePreview} className="max-h-32 rounded-lg border" />
+{(exerciseImagePreview || existingImageUrl) && (
+  <img
+    src={exerciseImagePreview || existingImageUrl || ""}
+    className="max-h-32 rounded-lg border"
+  />
 )}
 
 <div className="border-t pt-4 space-y-3">
@@ -645,6 +705,7 @@ const handleDeleteExercise = async (id: string) => {
           Fjarlægja
         </button>
       </div>
+     
 
       <input
         type="text"
@@ -700,9 +761,9 @@ const handleDeleteExercise = async (id: string) => {
           type="text"
           value={sp.correct_answer}
           onChange={(e) => updateSubpart(i, { correct_answer: e.target.value })}
-          placeholder="Rétt svar"
+          placeholder="Rétt svar - má hafa fleiri á milli | t.d. 1200 | 1.200 kr"
           className="w-full border rounded-lg p-2 text-sm"
-        />
+       />
       )}
 
       
@@ -748,9 +809,9 @@ const handleDeleteExercise = async (id: string) => {
               type="text"
               value={numericAnswer}
               onChange={(e) => setNumericAnswer(e.target.value)}
-              placeholder={answerType === "numeric" ? "Rétt svar (t.d. 42)" : "Rétt svar (t.d. hluti deilt með heild)"}
+              placeholder="Rétt svar - má hafa fleiri á milli | t.d. 1200 | 1.200 kr"
               className="w-full border rounded-lg p-2"
-            />
+             />
           ) : (
             <div className="space-y-2">
               {[choice1, choice2, choice3, choice4].map((val, i) => (
@@ -803,29 +864,70 @@ const handleDeleteExercise = async (id: string) => {
             />
           </div>
           )}
+<div className="flex items-center gap-2">
+  <button
+    onClick={handleSaveExercise}
+    disabled={savingExercise}
+    className="px-4 py-2 bg-blue-600 text-white rounded-lg disabled:opacity-50"
+  >
+    {savingExercise ? "Vistar..." : editingExerciseId ? "💾 Uppfæra dæmi" : "Vista dæmi"}
+  </button>
+  {editingExerciseId && (
+    <button
+      onClick={cancelEditExercise}
+      className="px-4 py-2 rounded-lg border"
+    >
+      Hætta við
+    </button>
+  )}
+</div>
 
-          <button
-            onClick={handleAddExercise}
-            disabled={savingExercise}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg disabled:opacity-50"
-          >
-            {savingExercise ? "Vistar..." : "Vista dæmi"}
-          </button>
+        <div className="space-y-3 mt-6">
+  {exercises.length === 0 && (
+    <p className="text-muted-foreground text-sm">Engin dæmi ennþá fyrir þennan hluta.</p>
+  )}
 
-          <div className="space-y-3 mt-6">
-            {exercises.length === 0 && (
-              <p className="text-muted-foreground text-sm">Engin dæmi ennþá fyrir þennan hluta.</p>
-            )}
-            {exercises.map((ex) => (
+  {LEVELS.map((lvl) => {
+    const levelExercises = exercises.filter((ex) => ex.level === lvl);
+    if (levelExercises.length === 0) return null;
+
+    const isOpen = expandedLevel === lvl;
+
+    return (
+      <div key={lvl} className="border rounded-lg overflow-hidden">
+        <button
+          onClick={() => setExpandedLevel(isOpen ? null : lvl)}
+          className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
+        >
+          <div className="flex items-center gap-2">
+            {isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+            <span
+              className="text-xs font-semibold px-2.5 py-1 rounded-full"
+              style={{ background: `${LEVEL_META[lvl].hex}15`, color: LEVEL_META[lvl].hex }}
+            >
+              {LEVEL_META[lvl].label}
+            </span>
+            <span className="text-xs text-muted-foreground">
+              {levelExercises.length} dæmi
+            </span>
+          </div>
+        </button>
+
+        {isOpen && (
+          <div className="px-4 pb-4 space-y-3 border-t pt-3">
+            {levelExercises.map((ex) => (
               <div key={ex.id} className="border rounded-lg p-3 flex justify-between items-start gap-3">
                 <div>
                   <div className="text-xs text-muted-foreground mb-1">
-                    {LEVEL_META[ex.level as keyof typeof LEVEL_META]?.label} · Dæmi #{ex.question_number}
+                    Dæmi #{ex.question_number}
+                    {ex.subparts && ex.subparts.length > 0 && ` · ${ex.subparts.length} liðir`}
                   </div>
                   <div className="text-sm">{ex.question_text}</div>
-                  <div className="text-xs text-muted-foreground mt-1">
-                    Svar: {ex.correct_answer}
-                  </div>
+                  {(!ex.subparts || ex.subparts.length === 0) && (
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Svar: {ex.correct_answer}
+                    </div>
+                  )}
                 </div>
                 <button
                   onClick={() => handleDeleteExercise(ex.id)}
@@ -833,10 +935,21 @@ const handleDeleteExercise = async (id: string) => {
                 >
                   <Trash2 size={18} />
                 </button>
+                 <button
+  onClick={() => handleStartEditExercise(ex)}
+  className="text-gray-400 hover:text-blue-600 transition-colors shrink-0"
+>
+  <Pencil size={18} />
+</button>
               </div>
             ))}
           </div>
-        </div>
+        )}
+      </div>
+    );
+  })}
+</div>
+  </div>
       )}
     </div>
   );

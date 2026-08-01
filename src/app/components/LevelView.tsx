@@ -33,6 +33,34 @@ interface NoteData {
   image_url: string | null;
   created_at: string;
 }
+interface SubpartData {
+  label: string;
+  question_text: string;
+  answer_type: "multiple_choice" | "numeric" | "text";
+  choices: string[] | null;
+  correct_answer: string;
+  hint1: string | null;
+  hint2: string | null;
+  hint3: string | null;
+}
+
+interface ExerciseData {
+  id: string;
+  category_id: string;
+  section_id: string;
+  level: string;
+  question_number: number;
+  question_text: string;
+  answer_type: "multiple_choice" | "numeric" | "text";
+  choices: string[] | null;
+  correct_answer: string;
+  hint1: string | null;
+  hint2: string | null;
+  hint3: string | null;
+  image_url: string | null;
+  subparts: SubpartData[] | null;
+}
+
 interface ExerciseData {
   id: string;
   category_id: string;
@@ -90,16 +118,38 @@ useEffect(() => {
 
 const handleCheckAnswer = (exercise: ExerciseData) => {
   const studentAnswer = (studentAnswers[exercise.id] || "").trim().toLowerCase();
-  const correctAnswer = exercise.correct_answer.trim().toLowerCase();
-  const isCorrect = studentAnswer === correctAnswer;
+  const acceptedAnswers = exercise.correct_answer
+    .split("|")
+    .map((a) => a.trim().toLowerCase());
+  const isCorrect = acceptedAnswers.includes(studentAnswer);
 
   setFeedback({ ...feedback, [exercise.id]: isCorrect ? "correct" : "incorrect" });
 };
 
-const handleShowHint = (exerciseId: string) => {
-  const current = hintsShown[exerciseId] || 0;
+const handleCheckSubpartAnswer = (exercise: ExerciseData, subpart: SubpartData) => {
+  const key = `${exercise.id}::${subpart.label}`;
+  const studentAnswer = (studentAnswers[key] || "").trim().toLowerCase();
+  const acceptedAnswers = subpart.correct_answer
+    .split("|")
+    .map((a) => a.trim().toLowerCase());
+  const isCorrect = acceptedAnswers.includes(studentAnswer);
+
+  const newFeedback = { ...feedback, [key]: (isCorrect ? "correct" : "incorrect") as "correct" | "incorrect" };
+
+  const allSubpartsCorrect = (exercise.subparts || []).every(
+    (sp) => newFeedback[`${exercise.id}::${sp.label}`] === "correct"
+  );
+  if (allSubpartsCorrect) {
+    newFeedback[exercise.id] = "correct";
+  }
+
+  setFeedback(newFeedback);
+};
+
+const handleShowHint = (key: string) => {
+  const current = hintsShown[key] || 0;
   if (current < 3) {
-    setHintsShown({ ...hintsShown, [exerciseId]: current + 1 });
+    setHintsShown({ ...hintsShown, [key]: current + 1 });
   }
 };
 
@@ -347,144 +397,231 @@ const handleShowHint = (exerciseId: string) => {
               </div>
             </div>
           </div>
+<div className="order-1 lg:order-2 space-y-6">
+<div className="bg-card border border-border rounded-xl overflow-hidden">
+  <div className="px-5 py-4 border-b border-border flex items-center justify-between">
+    <div className="flex items-center gap-3">
+      <BookOpen size={18} style={{ color: category.accentColor }} />
+      <span className="font-semibold text-sm">Verkefni</span>
+    </div>
+    {exercises.length > 0 && (
+      <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ background: `${meta.hex}15`, color: meta.hex }}>
+        {solvedCount}/{exercises.length} leyst
+      </span>
+    )}
+  </div>
 
-          {/* Hægri dálkur: Verkefni + Ljúka stigi */}
-          <div className="order-1 lg:order-2 space-y-6">
-            <div className="bg-card border border-border rounded-xl overflow-hidden">
-              <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <BookOpen size={18} style={{ color: category.accentColor }} />
-                  <span className="font-semibold text-sm">Verkefni</span>
-                </div>
-                {exercises.length > 0 && (
-                  <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ background: `${meta.hex}15`, color: meta.hex }}>
-                    {solvedCount}/{exercises.length} leyst
-                  </span>
-                )}
+  <div className="px-5 py-6">
+    {exercises.length === 0 && (
+      <p className="text-sm text-muted-foreground text-center">
+        Engin dæmi ennþá fyrir þetta stig.
+      </p>
+    )}
+
+    <div className="flex gap-4 items-start">
+      <div className="flex-1 space-y-6 min-w-0">
+        {exercises.map((exercise, idx) => {
+          const previousSolved =
+            idx === 0 || feedback[exercises[idx - 1].id] === "correct";
+          if (!previousSolved) return null;
+
+          const shownHints = hintsShown[exercise.id] || 0;
+          const hints = [exercise.hint1, exercise.hint2, exercise.hint3].filter(Boolean);
+          const fb = feedback[exercise.id];
+          const hasSubparts = exercise.subparts && exercise.subparts.length > 0;
+
+          if (fb === "correct") {
+            return (
+              <div key={exercise.id} className="flex items-center gap-2 text-emerald-600 text-sm py-2 px-4 border rounded-lg bg-emerald-50">
+                <CheckCircle2 size={16} />
+                <span>Dæmi #{exercise.question_number} — leyst</span>
               </div>
-               </div>
+            );
+          }
 
-              <div className="px-5 py-6">
-                {exercises.length === 0 && (
-                  <p className="text-sm text-muted-foreground text-center">
-                    Engin dæmi ennþá fyrir þetta stig.
-                  </p>
-                )}
+          return (
+            <div key={exercise.id} className="border rounded-xl p-4">
+              <div className="text-xs text-muted-foreground mb-1">
+                Dæmi #{exercise.question_number}
+              </div>
+              <p className="font-medium mb-3">{exercise.question_text}</p>
 
-               <div className="flex gap-4 items-start">
-                <div className="flex-1 space-y-6 min-w-0">
-                  {exercises.map((exercise, idx) => {
-                    const previousSolved =
-                      idx === 0 || feedback[exercises[idx - 1].id] === "correct";
-                    if (!previousSolved) return null;
+              {exercise.image_url && (
+                <img src={exercise.image_url} className="mb-3 max-h-64 rounded-lg border w-full object-contain" />
+              )}
 
-                    const shownHints = hintsShown[exercise.id] || 0;
-                    const hints = [exercise.hint1, exercise.hint2, exercise.hint3].filter(Boolean);
-                    const fb = feedback[exercise.id];
+              {!hasSubparts ? (
+                <>
+                  {exercise.answer_type !== "multiple_choice" ? (
+                    <input
+                      type="text"
+                      value={studentAnswers[exercise.id] || ""}
+                      onChange={(e) =>
+                        setStudentAnswers({ ...studentAnswers, [exercise.id]: e.target.value })
+                      }
+                      placeholder="Svarið þitt"
+                      className="w-full border rounded-lg p-2 text-sm mb-2"
+                    />
+                  ) : (
+                    <div className="space-y-2 mb-2">
+                      {exercise.choices?.map((choice, i) => (
+                        <label key={i} className="flex items-center gap-2 text-sm">
+                          <input
+                            type="radio"
+                            name={`exercise-${exercise.id}`}
+                            checked={studentAnswers[exercise.id] === choice}
+                            onChange={() =>
+                              setStudentAnswers({ ...studentAnswers, [exercise.id]: choice })
+                            }
+                          />
+                          {choice}
+                        </label>
+                      ))}
+                    </div>
+                  )}
 
-                    if (fb === "correct") {
-                      return (
-                        <div key={exercise.id} className="flex items-center gap-2 text-emerald-600 text-sm py-2 px-4 border rounded-lg bg-emerald-50">
-                          <CheckCircle2 size={16} />
-                          <span>Dæmi #{exercise.question_number} — leyst ({studentAnswers[exercise.id]})</span>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <button
+                      onClick={() => handleCheckAnswer(exercise)}
+                      className="px-3 py-1.5 rounded-lg text-sm text-white"
+                      style={{ background: meta.hex }}
+                    >
+                      Athuga svar
+                    </button>
+
+                    {shownHints < 3 && (
+                      <button
+                        onClick={() => handleShowHint(exercise.id)}
+                        className="px-3 py-1.5 rounded-lg border text-sm"
+                      >
+                        💡 Fá vísbendingu
+                      </button>
+                    )}
+                  </div>
+
+                  {fb === "incorrect" && (
+                    <p className="text-red-600 text-sm font-medium mt-2">Ekki alveg — prófaðu aftur.</p>
+                  )}
+
+                  {shownHints > 0 && (
+                    <div className="mt-3 space-y-1.5">
+                      {hints.slice(0, shownHints).map((hint, i) => (
+                        <div key={i} className="text-sm bg-amber-50 border border-amber-200 rounded-lg p-2">
+                          💡 Vísbending {i + 1}: {hint}
                         </div>
-                      );
-                    }
-                    const currentLevelIndex = LEVELS.indexOf(level);
-const nextLevel = LEVELS[currentLevelIndex + 1]; // undefined ef þetta var síðasta stigið (Alfa)
+                      ))}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="space-y-4 mt-2">
+                  {exercise.subparts!.map((sp) => {
+                    const key = `${exercise.id}::${sp.label}`;
+                    const spFb = feedback[key];
+                    const spShownHints = hintsShown[key] || 0;
+                    const spHints = [sp.hint1, sp.hint2, sp.hint3].filter(Boolean);
 
                     return (
-                      <div key={exercise.id} className="border rounded-xl p-4">
-                        <div className="text-xs text-muted-foreground mb-1">
-                          Dæmi #{exercise.question_number}
-                        </div>
-                        <p className="font-medium mb-3">{exercise.question_text}</p>
+                      <div key={sp.label} className="border rounded-lg p-3 bg-muted/10">
+                        <div className="text-xs font-semibold mb-1">Liður {sp.label})</div>
+                        <p className="text-sm mb-2">{sp.question_text}</p>
 
-                        {exercise.image_url && (
-                          <img src={exercise.image_url} className="mb-3 max-h-64 rounded-lg border w-full object-contain" />
-                        )}
-
-                        {exercise.answer_type !== "multiple_choice" ? (
-                          <input
-                            type="text"
-                            value={studentAnswers[exercise.id] || ""}
-                            onChange={(e) =>
-                              setStudentAnswers({ ...studentAnswers, [exercise.id]: e.target.value })
-                            }
-                            placeholder="Svarið þitt"
-                            className="w-full border rounded-lg p-2 text-sm mb-2"
-                          />
+                        {spFb === "correct" ? (
+                          <div className="flex items-center gap-2 text-emerald-600 text-sm">
+                            <CheckCircle2 size={14} />
+                            <span>Rétt!</span>
+                          </div>
                         ) : (
-                          <div className="space-y-2 mb-2">
-                            {exercise.choices?.map((choice, i) => (
-                              <label key={i} className="flex items-center gap-2 text-sm">
-                                <input
-                                  type="radio"
-                                  name={`exercise-${exercise.id}`}
-                                  checked={studentAnswers[exercise.id] === choice}
-                                  onChange={() =>
-                                    setStudentAnswers({ ...studentAnswers, [exercise.id]: choice })
-                                  }
-                                />
-                                {choice}
-                              </label>
-                            ))}
-                          </div>
-                        )}
-
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <button
-                            onClick={() => handleCheckAnswer(exercise)}
-                            className="px-3 py-1.5 rounded-lg text-sm text-white"
-                            style={{ background: meta.hex }}
-                          >
-                            Athuga svar
-                          </button>
-
-                          {shownHints < 3 && (
-                            <button
-                              onClick={() => handleShowHint(exercise.id)}
-                              className="px-3 py-1.5 rounded-lg border text-sm"
-                            >
-                              💡 Fá vísbendingu
-                            </button>
-                          )}
-                        </div>
-
-                        {fb === "incorrect" && (
-                          <p className="text-red-600 text-sm font-medium mt-2">Ekki alveg — prófaðu aftur.</p>
-                        )}
-
-                        {shownHints > 0 && (
-                          <div className="mt-3 space-y-1.5">
-                            {hints.slice(0, shownHints).map((hint, i) => (
-                              <div key={i} className="text-sm bg-amber-50 border border-amber-200 rounded-lg p-2">
-                                💡 Vísbending {i + 1}: {hint}
+                          <>
+                            {sp.answer_type !== "multiple_choice" ? (
+                              <input
+                                type="text"
+                                value={studentAnswers[key] || ""}
+                                onChange={(e) =>
+                                  setStudentAnswers({ ...studentAnswers, [key]: e.target.value })
+                                }
+                                placeholder="Svarið þitt"
+                                className="w-full border rounded-lg p-2 text-sm mb-2"
+                              />
+                            ) : (
+                              <div className="space-y-1 mb-2">
+                                {sp.choices?.map((choice, i) => (
+                                  <label key={i} className="flex items-center gap-2 text-sm">
+                                    <input
+                                      type="radio"
+                                      name={`subpart-${key}`}
+                                      checked={studentAnswers[key] === choice}
+                                      onChange={() =>
+                                        setStudentAnswers({ ...studentAnswers, [key]: choice })
+                                      }
+                                    />
+                                    {choice}
+                                  </label>
+                                ))}
                               </div>
-                            ))}
-                          </div>
+                            )}
+
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <button
+                                onClick={() => handleCheckSubpartAnswer(exercise, sp)}
+                                className="px-3 py-1 rounded-lg text-xs text-white"
+                                style={{ background: meta.hex }}
+                              >
+                                Athuga svar
+                              </button>
+                              {spShownHints < 3 && (
+                                <button
+                                  onClick={() => handleShowHint(key)}
+                                  className="px-3 py-1 rounded-lg border text-xs"
+                                >
+                                  💡 Vísbending
+                                </button>
+                              )}
+                            </div>
+
+                            {spFb === "incorrect" && (
+                              <p className="text-red-600 text-xs font-medium mt-1.5">Ekki alveg — prófaðu aftur.</p>
+                            )}
+
+                            {spShownHints > 0 && (
+                              <div className="mt-2 space-y-1">
+                                {spHints.slice(0, spShownHints).map((hint, i) => (
+                                  <div key={i} className="text-xs bg-amber-50 border border-amber-200 rounded-lg p-1.5">
+                                    💡 {hint}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </>
                         )}
                       </div>
                     );
                   })}
                 </div>
-                    {/* Hliðardálkur: læst, framundan dæmi */}
-    <div className="hidden sm:flex flex-col gap-2 w-32 shrink-0">
-      {exercises
-        .filter((ex) => feedback[ex.id] !== "correct")
-        .slice(1)
-        .map((ex) => (
-          <div
-            key={ex.id}
-            className="flex items-center justify-center gap-1.5 py-3 px-2 rounded-lg border border-dashed text-xs text-muted-foreground bg-muted/20"
-          >
-            <Lock size={12} />
-            Dæmi #{ex.question_number}
-          </div>
-        ))}
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="hidden sm:flex flex-col gap-2 w-32 shrink-0">
+        {exercises
+          .filter((ex) => feedback[ex.id] !== "correct")
+          .slice(1)
+          .map((ex) => (
+            <div
+              key={ex.id}
+              className="flex items-center justify-center gap-1.5 py-3 px-2 rounded-lg border border-dashed text-xs text-muted-foreground bg-muted/20"
+            >
+              <Lock size={12} />
+              Dæmi #{ex.question_number}
+            </div>
+          ))}
+      </div>
     </div>
   </div>
 </div>
+
               
             {isCompleted || justCompleted ? (
               <div className="flex items-center justify-center gap-2 py-4 text-emerald-600 font-semibold">
@@ -513,6 +650,7 @@ const nextLevel = LEVELS[currentLevelIndex + 1]; // undefined ef þetta var sí�
         </div>
       </main>
     </div>
+
   );
 }
 export default LevelView;
